@@ -1,0 +1,13 @@
+dataset: pacs
+num_class: 7
+img_size: 224
+tgt_train_dist: 1
+seeds: [0, 1, 2, 3, 4]
+cont_seq: 0   # 0 = art_painting -> cartoon -> sketch (thu tu goc cua paper); 2..6 = hoan vi khac
+domains: [art_painting, cartoon, sketch]
+src_domain: photo
+data_path: ../domainbed_dataset/PACS
+checkpoint_path: ../pretrained_weights/pacs
+notes: >
+  Chi 3 domain -> chuoi continual ngan (~129 batch/seed) so voi corruption
+  dataset (~2340 batch/seed). Can nhieu seed hon (>=5) de dat du power thong ke.

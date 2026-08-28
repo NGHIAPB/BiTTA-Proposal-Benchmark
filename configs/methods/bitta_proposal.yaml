@@ -1,0 +1,24 @@
+# BiTTA-Proposal (C1 + C4) — dong gop cua de an.
+# C1: chon mau cuc dai hoa do loi thong tin h_b(p_hat), hieu chuan Platt online.
+# C4: tach so luot MC-Dropout rieng cho buoc chon mau (n_dropouts_select).
+method: BiTTA
+sample_selection: info_max
+n_dropouts_select: 16
+explore_eps: 0.0
+platt_min_samples: 20     # 60 la mac dinh code; 20 la cau hinh chinh thuc dang bao cao cho PACS
+platt_buffer_size: 300
+platt_refit_every: 1
+# Cac tham so con lai giu nguyen giong bitta_baseline.yaml de dam bao so sanh cong bang
+model: resnet18
+epoch: 3
+lr: 0.0001
+weight_decay: 0.0
+update_every_x: 64
+memory_size: 64
+memory_type: ActivePriorityFIFO
+n_dropouts: 4
+dropout_rate: 0.3
+use_learned_stats: true
+bn_momentum: 0.3
+n_active_sample: 3
+restoration_factor: 0.0

@@ -1,0 +1,23 @@
+dataset: cifar100
+num_class: 100
+img_size: 32
+tgt_train_dist: 1
+seeds: [0, 1, 2]
+corruptions:
+  - gaussian_noise-5
+  - shot_noise-5
+  - impulse_noise-5
+  - defocus_blur-5
+  - glass_blur-5
+  - motion_blur-5
+  - zoom_blur-5
+  - snow-5
+  - frost-5
+  - fog-5
+  - brightness-5
+  - contrast-5
+  - elastic_transform-5
+  - pixelate-5
+  - jpeg_compression-5
+data_path: ../dataset/CIFAR-100-C
+checkpoint_path: ../pretrained_weights/cifar100

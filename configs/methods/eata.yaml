@@ -1,0 +1,11 @@
+# EATA (Niu et al., 2022) — loc mau theo entropy + Fisher regularization chong quen.
+method: EATA
+model: resnet18
+epoch: 1
+lr: 0.001
+weight_decay: 0.0
+fisher_size: 2000
+fisher_alpha: 2000.0
+e_margin_coeff: 0.4   # E0 = e_margin_coeff * ln(num_class)
+d_margin: 0.05
+extra_flags: []

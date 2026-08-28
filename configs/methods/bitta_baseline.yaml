@@ -1,0 +1,16 @@
+# BiTTA-baseline — nguyen ban theo paper Lee et al. (ICML 2025), sample_selection=mc_conf.
+method: BiTTA
+sample_selection: mc_conf
+model: resnet18   # doi thanh resnet18_pretrained cho Tiny-ImageNet-C / PACS / WaterBirds
+epoch: 3          # 5 cho Tiny-ImageNet-C
+lr: 0.0001        # 0.00005 cho Tiny-ImageNet-C; 0.001 cho PACS
+weight_decay: 0.0 # 0.05 cho PACS (theo Appendix D.2 cua paper goc)
+update_every_x: 64
+memory_size: 64
+memory_type: ActivePriorityFIFO
+n_dropouts: 4     # giam xuong 2 cho Tiny-ImageNet-C / PACS (anh 224x224, tranh OOM)
+dropout_rate: 0.3 # 0.1 cho Tiny-ImageNet-C
+use_learned_stats: true
+bn_momentum: 0.3
+n_active_sample: 3
+restoration_factor: 0.0  # 0.01 cho Tiny-ImageNet-C

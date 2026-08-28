@@ -1,0 +1,10 @@
+log/
+cached_data/
+pretrained_weights/**/*.pth.tar
+datasets/**/*
+!datasets/**/README.md
+__pycache__/
+*.pyc
+raw_logs/
+*.tar.gz
+.DS_Store

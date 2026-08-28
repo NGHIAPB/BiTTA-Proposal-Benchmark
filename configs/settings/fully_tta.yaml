@@ -1,0 +1,12 @@
+# Fully TTA: khong can thiep giai doan huan luyen (chi dung model pretrained co san),
+# thich ung THUAN TUY luc kiem thu. Day la mac dinh cua ca BiTTA-family lan DeYO-family.
+#
+# BiTTA-family (src/main.py):
+#   Khong can flag gi dac biet -- moi phuong phap (TENT/EATA/SAR/BiTTA) deu la Fully TTA.
+#
+# DeYO-family (src/methods/deyo/main.py):
+#   --continual False   (mac dinh cua DeYO)
+setting: fully_tta
+description: >
+  Mo hinh pretrained duoc dung nguyen, khong sua doi loss/kien truc luc huan luyen.
+  Thich ung chi dien ra tai thoi diem kiem thu (test-time), theo tung anh/batch.

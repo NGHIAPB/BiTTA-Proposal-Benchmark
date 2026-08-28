@@ -1,0 +1,10 @@
+# MEMO (Zhang, Levine, Finn -- NeurIPS 2022) -- toi thieu hoa marginal entropy tren
+# 1 batch augmix cua TUNG anh test rieng le (episodic, khong co bo nho xuyen batch).
+# Runner RIENG: src/methods/memo/main.py -- dung lai checkpoint ResNet-18 cua ho
+# BiTTA-family (pretrained_weights/) de dam bao xuat phat cung 1 trong so voi 6
+# phuong phap con lai.
+method: MEMO
+model: resnet18
+batch_size: 32     # so augmentation moi anh (Algorithm 1 cua paper)
+niter: 1
+lr: 0.005          # 0.00025 neu img_size=224 (tiny-imagenet/pacs), xem README

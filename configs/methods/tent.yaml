@@ -1,0 +1,12 @@
+# TENT (Wang et al., 2021) — chỉ cập nhật tham số BatchNorm bằng entropy minimization.
+# Runner: src/main.py (họ BiTTA-family, dùng chung pipeline continual TTA)
+method: TENT
+model: resnet18
+epoch: 1
+lr: 0.001
+weight_decay: 0.0
+update_every_x: 64
+memory_size: 64
+memory_type: "FIFO"
+use_learned_stats: true
+extra_flags: []

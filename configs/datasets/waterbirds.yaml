@@ -1,0 +1,13 @@
+dataset: waterbirds
+num_class: 2
+img_size: 224
+seeds: [0, 1, 2]
+data_path: ../dataset/WaterBirds
+checkpoint_path: ../pretrained_weights/waterbirds
+runner: deyo   # hien tai chi noi san voi runner cua DeYO (src/methods/deyo/main.py --dset Waterbirds)
+notes: >
+  WaterBirds la benchmark tuong quan gia (spurious correlation), dung de kiem tra
+  dieu kien ap dung cua C1 tren mot loai domain shift KHAC voi corruption/style shift
+  (xem phan phan tich "TRAP vs CPR factors" cua paper DeYO). Chua co dataset loader
+  rieng cho BiTTA-family (main.py) -- xem huong dan mo rong trong README.md muc
+  "Them dataset moi cho BiTTA-family".

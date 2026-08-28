@@ -1,0 +1,26 @@
+dataset: tiny-imagenet
+num_class: 200
+img_size: 224
+tgt_train_dist: 1
+seeds: [0, 1, 2]
+corruptions:
+  - gaussian_noise-5
+  - shot_noise-5
+  - impulse_noise-5
+  - defocus_blur-5
+  - glass_blur-5
+  - motion_blur-5
+  - zoom_blur-5
+  - snow-5
+  - frost-5
+  - fog-5
+  - brightness-5
+  - contrast-5
+  - elastic_transform-5
+  - pixelate-5
+  - jpeg_compression-5
+data_path: ../dataset/Tiny-ImageNet-C
+checkpoint_path: ../pretrained_weights/tiny-imagenet
+notes: >
+  Anh 224x224 -> can --n_dropouts 2 (thay vi 4 mac dinh) de tranh CUDA OOM
+  tren GPU ca nhan <=16GB VRAM. Xem README goc de biet chi tiet.

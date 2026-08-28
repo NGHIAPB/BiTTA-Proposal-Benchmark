@@ -1,0 +1,14 @@
+# Continuous (Continual TTA): cac domain/corruption noi tiep nhau trong 1 dong lien tuc,
+# tham so theta KHONG duoc reset ve trang thai pretrained giua cac doan.
+#
+# BiTTA-family (src/main.py):
+#   --tgt cont
+#   (khong dat --reset_every_corruption -> giu nguyen tinh chat khong reset)
+#
+# DeYO-family (src/methods/deyo/main.py):
+#   --continual True   --exp_type normal
+setting: continuous
+description: >
+  Toan bo 15 corruption (CIFAR-C/Tiny-ImageNet-C) hoac cac domain (PACS) duoc
+  duyet qua LAN LUOT theo mot thu tu co dinh, khong dung lai giua cac doan.
+  Day la setting chinh dang dung cho toan bo ket qua bao cao trong de an.

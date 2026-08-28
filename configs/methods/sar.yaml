@@ -1,0 +1,9 @@
+# SAR (Niu et al., 2023) — entropy minimization co sharpness-aware, dong bang layer cuoi.
+method: SAR
+model: resnet18
+epoch: 1
+lr: 0.00025
+sar_margin_e0_coeff: 0.4   # E0 = coeff * ln(num_class)
+sharpness_rho: 0.5
+freeze_top_layer: true
+extra_flags: []

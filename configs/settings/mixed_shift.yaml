@@ -1,0 +1,16 @@
+# Mixed shift: nhieu loai corruption/domain bi TRON LAN NGAU NHIEN trong cung 1 dong,
+# thay vi di theo tung khoi rieng biet. Kho hon continuous vi mo hinh khong co
+# "khoang thoi gian on dinh" de thich nghi rieng voi 1 loai shift truoc khi gap loai khac.
+#
+# BiTTA-family (src/main.py):
+#   --tgt cont --random_setting
+#   (corruption_list duoc gop thanh 1 danh sach roi xao tron ngau nhien moi batch)
+#
+# DeYO-family (src/methods/deyo/main.py):
+#   --continual True   --exp_type mix_shifts
+setting: mixed_shift
+description: >
+  CHUA duoc chay trong de an hien tai -- day la huong mo rong da duoc de xuat
+  (dac biet cho PACS, de kiem tra gia thuyet "cold-start do thu tu domain co dinh"
+  ma khong can tang so seed).
+status: TODO
