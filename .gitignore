@@ -10,3 +10,7 @@ __pycache__/
 raw_logs/
 *.tar.gz
 .DS_Store
+
+# Khong dua slide/bang so len repo
+*.pptx
+*.csv
