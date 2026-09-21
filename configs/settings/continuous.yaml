@@ -1,14 +1,10 @@
-# Continuous (Continual TTA): cac domain/corruption noi tiep nhau trong 1 dong lien tuc,
-# tham so theta KHONG duoc reset ve trang thai pretrained giua cac doan.
+# Continuous (continual TTA, Wang et al. 2022): cac corruption/domain noi tiep nhau trong 1 luong lien tuc,
+# tham so theta KHONG duoc reset ve mo hinh nguon giua cac doan. La setting chinh cua paper BiTTA.
 #
-# BiTTA-family (src/main.py):
-#   --tgt cont
-#   (khong dat --reset_every_corruption -> giu nguyen tinh chat khong reset)
-#
-# DeYO-family (src/methods/deyo/main.py):
-#   --continual True   --exp_type normal
+#   src/main.py --tgt cont            (scripts/run_bitta_family.sh <method> <dataset> continuous <seed>)
 setting: continuous
+datasets: [cifar10_c, cifar100_c, tiny_imagenet_c, pacs]
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal]   # tent/eata/sar chay o che do co binary feedback
 description: >
-  Toan bo 15 corruption (CIFAR-C/Tiny-ImageNet-C) hoac cac domain (PACS) duoc
-  duyet qua LAN LUOT theo mot thu tu co dinh, khong dung lai giua cac doan.
-  Day la setting chinh dang dung cho toan bo ket qua bao cao trong de an.
+  15 corruption (CIFAR-C/Tiny-ImageNet-C) hoac 3 domain PACS (art_painting -> cartoon -> sketch) duoc duyet qua LAN LUOT
+  theo mot thu tu co dinh, khong reset. 3 seed (PACS: 5 seed). Khong ap dung cho imagenet_r / colored_mnist (1 domain dich).

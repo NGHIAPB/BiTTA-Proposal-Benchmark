@@ -2,12 +2,9 @@
 import conf
 from data_loader.CIFAR100Dataset import CIFAR100Dataset
 from data_loader.CIFAR10Dataset import CIFAR10Dataset
-from data_loader.IMAGENETDataset import ImageNetDataset
 
 from data_loader.PACSDataset import PacsDataset
-from data_loader.VLCSDataset import VlcsDataset
 from data_loader.TINYIMAGENETDataset import TinyImageNetDataset
-from data_loader.DOMAINNET126Dataset import DOMAINNET126Dataset
 from data_loader.IMAGENETRDataset import ImageNetRDataset
 from data_loader.COLOREDMNISTDataset import ColoredMNISTDataset
 
@@ -151,31 +148,19 @@ class EATA(ETA):
         super(EATA, self).__init__(model_, corruption_list_)
 
         # only use the first domain for fisher importance calculation
-        if conf.args.dataset in ["cifar10outdist", "cifar100outdist", "imagenetoutdist"]:
-            fisher_dataset = OutDistDataset(base=conf.args.dataset, domains=[corruption_list_[0]], max_source=9999,
-                                            transform='val',
-                                            outdist=conf.args.outdist, outdist_size=conf.args.outdist_size,
-                                            outdist_class=conf.args.outdist_class)
-        elif conf.args.dataset == "cifar10":
+        if conf.args.dataset == "cifar10":
             fisher_dataset = CIFAR10Dataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
         elif conf.args.dataset == "cifar100":
             fisher_dataset = CIFAR100Dataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
-        elif conf.args.dataset == "imagenet":
-            fisher_dataset = ImageNetDataset(file="", domain=corruption_list_[0], max_source=9999, transform='val')
-            
         elif conf.args.dataset == "pacs":
             fisher_dataset = PacsDataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
-        elif conf.args.dataset == "vlcs":
-            fisher_dataset = VlcsDataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
         elif conf.args.dataset == "tiny-imagenet":
             fisher_dataset = TinyImageNetDataset(file="", domain=corruption_list_[0], max_source=9999, transform='val')
-        elif conf.args.dataset == "domainnet-126":
-            fisher_dataset = DOMAINNET126Dataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
         elif conf.args.dataset == "imagenetR":
             fisher_dataset = ImageNetRDataset(file="", domain=corruption_list_[0], max_source=9999, transform='val')
         elif conf.args.dataset == "colored-mnist":
             import torchvision.transforms as transforms
-            fisher_dataset = ColoredMNISTDataset(root="dataset/colored_mnist", env=corruption_list_[0],# flip=True,
+            fisher_dataset = ColoredMNISTDataset(root=conf.COLORED_MNIST['file_path'], env=corruption_list_[0],# flip=True,
                                             transform=transforms.Compose([
                                                 transforms.ToTensor(),
                                                 transforms.Normalize((0.1307, 0.1307, 0.), (0.3081, 0.3081, 0.3081))

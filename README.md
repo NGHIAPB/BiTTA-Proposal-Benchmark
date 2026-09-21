@@ -1,31 +1,39 @@
 # TTA-Proposal-Benchmark
 
-Benchmark test-time adaptation (TTA) cho đề án tốt nghiệp "Proposal cho BiTTA", so sánh
-bảy phương pháp trên cùng một bộ dataset và cùng một backbone **ResNet-18**:
+Benchmark test-time adaptation (TTA) cho đề án tốt nghiệp "Proposal cho BiTTA": so sánh **BiTTA-Proposal (C1 + C4)**
+với BiTTA gốc và 3 phương pháp TTA khác được chạy ở chế độ **có binary feedback**, cùng một backbone **ResNet-18**.
 
-| # | Phương pháp | Nguồn |
+## Kịch bản thực nghiệm
+
+**Phương pháp** (5): TENT\*, EATA\*, SAR\*, BiTTA, BiTTA-Proposal (C1 + C4).
+(\* = phiên bản có binary feedback `--enable_bitta`, tương ứng biến thể "B" trong Table 1 của paper BiTTA.)
+
+| Setting | Dataset | Model |
 |---|---|---|
-| 1 | TENT | Wang et al., ICLR 2021 |
-| 2 | EATA | Niu et al., ICML 2022 |
-| 3 | SAR | Niu et al., ICLR 2023 |
-| 4 | DeYO | Lee et al., ICLR 2024 |
-| 5 | MEMO | Zhang, Levine & Finn, NeurIPS 2022 |
-| 6 | BiTTA-baseline | Lee et al., ICML 2025 |
-| 7 | BiTTA-Proposal (C1 + C4) | Đóng góp của đề án |
+| **Continuous** | CIFAR-10-C, CIFAR-100-C, Tiny-ImageNet-C, PACS | `resnet18` (CIFAR-C) · `resnet18_pretrained` (Tiny-ImageNet-C, PACS) |
+| **Mixed shift** | CIFAR-10-C, PACS | như trên |
+| **Fully TTA** | CIFAR-10-C, CIFAR-100-C, Tiny-ImageNet-C, PACS, ImageNet-R, ColoredMNIST | như trên; ImageNet-R, ColoredMNIST: `resnet18_pretrained` |
 
-Kiến trúc thư mục tham khảo repo **Benchmark-TTA**: tách `configs/` theo method/dataset,
-`scripts/` cho từng kịch bản thực nghiệm, `results/` cho lớp tổng hợp bảng so sánh.
+Số run: Continuous 70 + Mixed 40 + Fully 100 = **210** (3 seed; PACS 5 seed).
+Model **không** phải trục độc lập: do dataset quyết định (`resnet18` là ResNet-18 kiểu CIFAR, chỉ hợp ảnh 32×32).
+
+| Phương pháp | Nguồn |
+|---|---|
+| TENT | Wang et al., ICLR 2021 |
+| EATA | Niu et al., ICML 2022 |
+| SAR | Niu et al., ICLR 2023 |
+| BiTTA | Lee et al., ICML 2025 |
+| BiTTA-Proposal (C1 + C4) | Đóng góp của đề án |
 
 ## Mục lục
 
 - [Cấu trúc project](#cấu-trúc-project)
 - [Cài đặt](#cài-đặt)
-- [Chuẩn bị dữ liệu](#chuẩn-bị-dữ-liệu)
+- [Chuẩn bị dữ liệu và checkpoint](#chuẩn-bị-dữ-liệu-và-checkpoint)
 - [Cách chạy](#cách-chạy)
-- [3 setting TTA](#3-setting-tta-mở-rộng-được)
-- [Kiến trúc: vì sao 3 entrypoint riêng biệt](#kiến-trúc-vì-sao-3-entrypoint-riêng-biệt)
+- [Ba setting được cài đặt như thế nào](#ba-setting-được-cài-đặt-như-thế-nào)
+- [Ghi chú kỹ thuật](#ghi-chú-kỹ-thuật)
 - [Mở rộng project](#mở-rộng-project)
-- [Ghi chú kỹ thuật theo từng phương pháp](#ghi-chú-kỹ-thuật-theo-từng-phương-pháp)
 - [License / nguồn gốc code](#license--nguồn-gốc-code)
 - [Trạng thái kiểm chứng](#trạng-thái-kiểm-chứng)
 
@@ -34,43 +42,27 @@ Kiến trúc thư mục tham khảo repo **Benchmark-TTA**: tách `configs/` the
 ```
 TTA-Proposal-Benchmark/
 ├── configs/
-│   ├── methods/                  # sieu tham so tung phuong phap (tent/eata/sar/deyo/memo/bitta_*.yaml)
-│   ├── datasets/                 # thiet lap tung dataset (5 file .yaml)
-│   └── settings/                 # 3 setting TTA: fully_tta / continuous / mixed_shift
+│   ├── methods/                   # siêu tham số từng phương pháp (tent/eata/sar/bitta_*.yaml)
+│   ├── datasets/                  # thiết lập từng dataset (6 file .yaml)
+│   └── settings/                  # 3 setting: continuous / mixed_shift / fully_tta
 ├── src/
-│   ├── main.py                   # entrypoint chung cho ho BiTTA-family (TENT/EATA/SAR/BiTTA)
-│   ├── conf.py                   # cau hinh dataset (opt dict), khong sua so voi ban goc
-│   ├── process_cifar.py          # tien xu ly CIFAR-10-C/100-C tu file .npy Zenodo
-│   ├── learner/                  # TENT, EATA, SAR, CoTTA, RoTTA, SoTTA, SimATTA, BiTTA (dnn.py + bitta.py)
-│   ├── models/                   # ResNet.py (ResNet-18 co Dropout de MC-Dropout), ViT.py
-│   ├── data_loader/               # loader cho CIFAR10/100, TinyImageNet, PACS, VLCS, ImageNet-R...
-│   ├── utils/                     # loss functions, active_memory (Platt scaling C1), calibration...
-│   └── methods/
-│       ├── deyo/                  # ban sao nguyen ven repo chinh thuc cua tac gia DeYO
-│       │   ├── main.py            # entrypoint rieng cho DeYO (kien truc adapt() khac BiTTA-family)
-│       │   ├── config.py
-│       │   ├── methods/           # deyo.py, tent.py, eata.py, sar.py, sam.py
-│       │   ├── dataset/           # waterbirds_dataset.py, ColoredMNIST_dataset.py, *.npy (label shifts)
-│       │   ├── models/            # Res.py, resnet.py
-│       │   └── utils/             # utils.py, cli_utils.py, third_party.py
-│       └── memo/                  # MEMO -- vong lap episodic rieng, tu chua
-│           ├── main.py            # entrypoint rieng, dung lai checkpoint ResNet-18 cua BiTTA-family
-│           └── utils/             # augmix.py (augmentation loi cua thuat toan), data.py (doc dataset)
+│   ├── main.py                    # entrypoint duy nhất (TENT/EATA/SAR/BiTTA + huấn luyện nguồn --method Src)
+│   ├── conf.py                    # cấu hình dataset (opt dict)
+│   ├── process_cifar.py           # tiền xử lý CIFAR-10-C/100-C từ file .npy Zenodo
+│   ├── learner/                   # dnn.py (lớp cơ sở + chọn mẫu C1/C4), tent.py, sar.py, eata.py, bitta.py
+│   ├── models/ResNet.py           # ResNet-18 (kiểu CIFAR) và ResNetDropout18 (torchvision + Dropout cho MC-Dropout)
+│   ├── data_loader/               # CIFAR10/100, TinyImageNet, PACS, ImageNet-R, ColoredMNIST
+│   └── utils/                     # loss_functions, memory (FIFO), active_memory (ActivePriorityFIFO), calibration...
 ├── scripts/
-│   ├── smoke_test.sh              # kiem tra nhanh 1 lenh voi --nsample 500 truoc khi chay full
-│   ├── run_bitta_family.sh        # chay 1 method (tent|eata|sar|bitta_baseline|bitta_proposal) x 1 dataset x 1 seed
-│   ├── run_deyo_family.sh         # chay DeYO/TENT/EATA/SAR theo runner rieng cua DeYO
-│   ├── run_memo_family.sh         # chay MEMO (hoac baseline no_adapt) theo runner rieng cua MEMO
-│   └── run_all_bitta_family.sh    # vong lap toan bo method x dataset x seed
-├── dataset/                       # (rong) CIFAR-10-C, CIFAR-100-C, Tiny-ImageNet-C, WaterBirds
-├── domainbed_dataset/              # (rong) PACS -- ten thu muc khop dung conf.py goc, khong sua code
-├── pretrained_weights/             # (rong) checkpoint theo tung dataset
-├── log/                             # output ket qua (online_eval.json moi corruption/domain)
-├── results/
-│   ├── aggregate_results.py        # tong hop ho BiTTA-family (online_eval.json) thanh 1 bang
-│   └── aggregate_deyo_results.py   # tong hop DeYO + MEMO (log van ban) thanh 1 bang
-├── requirements.txt
-└── .gitignore
+│   ├── smoke_test.sh              # kiểm tra nhanh 3 setting (--nsample 500) trước khi chạy full
+│   ├── run_bitta_family.sh        # 1 run: <method> <dataset> <setting> <seed>
+│   └── run_all_bitta_family.sh    # toàn bộ 210 run (có lọc SETTINGS/DATASETS, SKIP_DONE)
+├── dataset/                       # (rỗng) CIFAR-10-C, CIFAR-100-C, Tiny-ImageNet-C, imagenet-r, ColoredMNIST
+├── domainbed_dataset/             # (rỗng) PACS
+├── pretrained_weights/            # (rỗng) checkpoint theo từng dataset
+├── log/                           # output (online_eval.json)
+├── results/aggregate_results.py   # tổng hợp bảng so sánh theo (dataset, setting)
+└── requirements.txt
 ```
 
 ## Cài đặt
@@ -79,15 +71,22 @@ TTA-Proposal-Benchmark/
 pip install -r requirements.txt
 ```
 
-Yêu cầu Python ≥ 3.9, PyTorch ≥ 2.0 với build CUDA phù hợp GPU cá nhân (dự án được thiết
-kế để chạy trên máy có 1 GPU ≥ 8 GB VRAM, không phụ thuộc cluster/multi-GPU).
+Yêu cầu Python ≥ 3.9, PyTorch ≥ 2.0 với build CUDA phù hợp GPU. Cần GPU: `src/main.py` gọi `.cuda()` trực tiếp.
 
-## Chuẩn bị dữ liệu
+## Chuẩn bị dữ liệu và checkpoint
 
-Thư mục `dataset/`, `domainbed_dataset/`, `pretrained_weights/` hiện để trống theo đúng
-yêu cầu ban đầu của đề án (chưa có nguồn dữ liệu). Mỗi thư mục con đều có `README.md`
-hướng dẫn nguồn tải và cấu trúc thư mục cần có cho: CIFAR-10-C, CIFAR-100-C,
-Tiny-ImageNet-C, PACS, WaterBirds.
+Mỗi thư mục con của `dataset/`, `domainbed_dataset/`, `pretrained_weights/` có `README.md` riêng (nguồn tải, cấu trúc
+thư mục, cách tạo checkpoint). Tóm tắt:
+
+| Dataset | Dữ liệu | Checkpoint |
+|---|---|---|
+| CIFAR-10-C / CIFAR-100-C | `dataset/CIFAR-10-C`, `dataset/CIFAR-100-C` | `pretrained_weights/cifar10\|cifar100/cp_last_<seed>.pth.tar` |
+| Tiny-ImageNet-C | `dataset/Tiny-ImageNet-C` | `pretrained_weights/tiny-imagenet/cp_last_<seed>.pth.tar` |
+| PACS | `domainbed_dataset/PACS` | `pretrained_weights/pacs/cp_last.pth.tar` (1 file chung) |
+| ImageNet-R | `dataset/imagenet-r` | **không cần** (torchvision pretrained) |
+| ColoredMNIST | `dataset/ColoredMNIST` (tự tạo từ MNIST) | `pretrained_weights/colored-mnist/cp_last_<seed>.pth.tar` (tự huấn luyện) |
+
+Checkpoint được tạo bằng `src/main.py --method Src` — xem `pretrained_weights/README.md`.
 
 ## Cách chạy
 
@@ -97,194 +96,114 @@ Tiny-ImageNet-C, PACS, WaterBirds.
 bash scripts/smoke_test.sh
 ```
 
-### 2. Họ BiTTA — TENT / EATA / SAR / BiTTA-baseline / BiTTA-Proposal
+### 2. Một run
 
 ```bash
-bash scripts/run_bitta_family.sh bitta_proposal cifar10_c 0 final_10_test_0_dist1
-bash scripts/run_bitta_family.sh tent            cifar10_c 0 tent_cifar10_s0
+# bash scripts/run_bitta_family.sh <method> <dataset> <setting> <seed>
+bash scripts/run_bitta_family.sh bitta_proposal cifar10_c continuous 0
+bash scripts/run_bitta_family.sh tent           pacs       mixed      0
+bash scripts/run_bitta_family.sh eata           imagenet_r fully      1
 ```
 
-### 3. DeYO (hoặc TENT/EATA/SAR theo runner gốc của DeYO)
+`method`: `tent | eata | sar | bitta_baseline | bitta_proposal` · `dataset`: `cifar10_c | cifar100_c | tiny_imagenet_c | pacs |
+imagenet_r | colored_mnist` · `setting`: `continuous | mixed | fully`. Script từ chối tổ hợp không thuộc kịch bản.
+Biến môi trường: `NSAMPLE` (giới hạn số ảnh; ImageNet-R mặc định 10000), `FISHER_SIZE` (EATA, mặc định 2000).
 
-```bash
-bash scripts/run_deyo_family.sh deyo ImageNet-C normal 2024
-bash scripts/run_deyo_family.sh deyo Waterbirds spurious 2024
-```
-
-### 4. MEMO — episodic, dùng lại checkpoint ResNet-18 của họ BiTTA-family
-
-```bash
-bash scripts/run_memo_family.sh memo cifar10 gaussian_noise 0 5
-bash scripts/run_memo_family.sh memo pacs sketch 0
-bash scripts/run_memo_family.sh no_adapt cifar10 gaussian_noise 0 5   # baseline khong adapt
-```
-
-### 5. Chạy toàn bộ
-
-Rất nặng — nên chạy từng dòng để kiểm tra khi test lần đầu.
+### 3. Toàn bộ 210 run
 
 ```bash
 bash scripts/run_all_bitta_family.sh
+# hoặc từng phần, có thể chạy tiếp sau khi bị ngắt:
+SETTINGS=continuous DATASETS=cifar10_c SKIP_DONE=1 bash scripts/run_all_bitta_family.sh
 ```
 
-### 6. Tổng hợp bảng so sánh
+### 4. Tổng hợp bảng so sánh
 
 ```bash
 cd results
-python aggregate_results.py --dataset cifar10_c                                       # TENT/EATA/SAR/BiTTA-baseline/BiTTA-Proposal
-python aggregate_deyo_results.py --log_dir ../log/deyo_deyo_ImageNet-C_normal_2024     # DeYO
-python aggregate_deyo_results.py --log_dir ../log/memo_memo_cifar10_s0                 # MEMO
+python aggregate_results.py --dataset cifar10_c --setting continuous
+python aggregate_results.py --all
 ```
 
-`aggregate_deyo_results.py` dùng chung cho DeYO và MEMO vì cả hai ghi log dạng văn bản
-(dòng `"Result under ... average: X.XXXXX"`), khác cấu trúc `online_eval.json` của họ
-BiTTA-family — xem [Định dạng log](#ghi-chú-kỹ-thuật-theo-từng-phương-pháp) bên dưới.
+Mixed shift báo cáo accuracy tích luỹ tại 25/50/75/100% luồng dữ liệu (như Table 2 của paper BiTTA).
 
-Kết quả in ra dạng:
+## Ba setting được cài đặt như thế nào
 
-```
-Method                     Mean Acc (%)       Std   # seed hoan tat
------------------------------------------------------------------------
-TENT                              80.49      0.xx              3/3
-EATA                              75.17      0.xx              3/3
-SAR                               83.78      0.xx              3/3
-BiTTA (baseline)                  87.23      0.25              3/3
-BiTTA-Proposal (C1+C4)            87.29      0.28              3/3
-```
+| Setting | Cách chạy trong `src/main.py` | Áp dụng |
+|---|---|---|
+| Continuous | `--tgt cont` — 1 tiến trình, 15 corruption (hoặc 3 domain PACS: art → cartoon → sketch) nối tiếp, **không reset** mô hình | 4 dataset có corruption/domain |
+| Mixed shift | `--tgt cont --random_setting` — các corruption/domain **trộn ngẫu nhiên** trong 1 luồng | chỉ CIFAR-10-C, PACS (`data_loader` chỉ hỗ trợ danh sách nhiều domain cho 2 dataset này) |
+| Fully TTA | `--tgt <unit>` — **mỗi corruption/domain là 1 tiến trình riêng**, khởi động từ mô hình nguồn | cả 6 dataset; ImageNet-R (`corrupt`) và ColoredMNIST (`test`) chỉ có 1 domain đích nên **chỉ** chạy setting này |
 
-## 3 setting TTA (mở rộng được)
+`src/main.py` từ chối các tổ hợp không hợp lệ (ImageNet-R/ColoredMNIST với `--tgt cont`; `--random_setting` ngoài
+CIFAR-10-C/PACS). Fully TTA dùng tiến trình riêng thay vì `--reset_every_corruption` vì cờ đó chỉ reset mô hình,
+optimizer và bộ đệm Platt — không reset trạng thái nội bộ của EATA (`current_model_probs`) và SAR.
 
-| Setting | BiTTA-family | DeYO-family | MEMO |
-|---|---|---|---|
-| Fully TTA | Mặc định (mọi method) | `--continual False` (mặc định) | Mặc định — duy nhất khả dụng |
-| Continuous | `--tgt cont` | `--continual True --exp_type normal` | Không áp dụng |
-| Mixed shift | `--tgt cont --random_setting` | `--continual True --exp_type mix_shifts` | Không áp dụng |
+## Ghi chú kỹ thuật
 
-MEMO chỉ hỗ trợ Fully TTA vì đây là đặc tính thuật toán, không phải giới hạn tích hợp:
-MEMO nạp lại đúng checkpoint gốc trước mỗi ảnh test (episodic, Algorithm 1 của paper) —
-không có khái niệm "trạng thái mang sang batch/domain kế tiếp" để mà reset hay không
-reset. Áp đặt một biến thể "continuous" cho MEMO sẽ đi ngược lại đúng thiết kế đã công
-bố của thuật toán.
+### TENT\*, EATA\*, SAR\* (có binary feedback)
 
-Chi tiết và trạng thái (đã chạy / TODO) của từng setting nằm trong `configs/settings/*.yaml`.
+Chạy với `--enable_bitta`: ngoài loss gốc, mỗi batch lấy `n_active_sample` (=3) mẫu để hỏi oracle (chọn ngẫu nhiên,
+`--sample_selection random` mặc định), rồi cộng thêm loss `CE` cho mẫu đúng và `complement-CE` cho mẫu sai
+(`DNN.get_bitta_ssl_loss`) — cách paper BiTTA điều chỉnh các baseline. BiTTA và BiTTA-Proposal dùng
+`ActivePriorityFIFO` + MC-Dropout; TENT/EATA/SAR **bắt buộc** `--memory_type FIFO` (các learner
+`assert isinstance(self.mem, FIFO)`). Siêu tham số từng method theo `tta.sh` của repo BiTTA gốc.
+Không có kết quả "không feedback" của TENT/EATA/SAR trong kịch bản này.
 
-## Kiến trúc: vì sao 3 entrypoint riêng biệt
+### Siêu tham số chưa có trong paper (chưa tinh chỉnh)
 
-`src/main.py` (họ BiTTA), `src/methods/deyo/main.py` (DeYO) và `src/methods/memo/main.py`
-(MEMO) có vòng lặp `adapt()` khác nhau về bản chất:
+| Dataset | BiTTA / BiTTA-Proposal | EATA |
+|---|---|---|
+| ImageNet-R | mượn Tiny-ImageNet-C (`epoch 5, lr 5e-5, dropout 0.1, n_dropouts 2, restoration 0.01`) | `e_margin = 0.4·ln(200)`, `lr 2.5e-4`, `d_margin 0.05`, `fisher_alpha 2000` |
+| ColoredMNIST | mượn CIFAR (`epoch 3, lr 1e-4, dropout 0.3, n_dropouts 4`) | `e_margin = 0.4·ln(2)`, `lr 5e-3`, `d_margin 0.4`, `fisher_alpha 1` |
 
-- **BiTTA-family**: bộ nhớ FIFO hai chiều (`M_C`/`M_I`) + policy gradient dual-path, liên
-  tục (continual) qua nhiều batch.
-- **DeYO**: lọc mẫu theo entropy + PLPD trên từng batch độc lập, không có bộ nhớ xuyên batch.
-- **MEMO**: episodic hoàn toàn — mỗi ảnh test được nạp lại đúng checkpoint gốc, augment
-  thành một batch augmix rồi tối thiểu hoá marginal entropy chỉ cho riêng ảnh đó, không
-  mang trạng thái sang ảnh kế tiếp.
+Paper BiTTA chỉ báo cáo 1 con số/dataset cho ImageNet-R và ColoredMNIST (Table 7, Appendix C) và không nêu cấu hình chi
+tiết. Coi kết quả là **xu hướng**, không phải tái lập số tuyệt đối.
 
-Gộp chung một vòng lặp sẽ phải viết lại thuật toán của các phía, rủi ro sai lệch với paper
-gốc. Do đó dự án giữ nguyên ba runner đã được xác thực riêng, và dùng
-`results/aggregate_results.py` + `results/aggregate_deyo_results.py` làm lớp tổng hợp
-chung ở output.
+### ImageNet-R và ColoredMNIST
+
+- ImageNet-R: `--nsample` giới hạn số ảnh nạp vào RAM (lấy ngẫu nhiên theo `--seed`, giữ thứ tự gốc): `main.py` giữ toàn bộ
+  tensor float32 3×224×224 (~0,6 MB/ảnh), 30.000 ảnh ≈ 18 GB (đỉnh gấp đôi khi `torch.stack`).
+- ColoredMNIST: loader tự tạo `train1.pt`/`train2.pt`/`test.pt` từ MNIST ở lần chạy đầu (cần internet) và đọc
+  `.pt` bằng `torch.load(..., weights_only=False)` (bắt buộc với PyTorch ≥ 2.6). Nguồn `all_train` chỉ được nạp khi huấn
+  luyện checkpoint (`--method Src`).
+
+### Cache
+
+`target_train_set` được cache ở `./cached_data/` với khoá **không chứa `--nsample`**. Sau khi đổi `--nsample` (ví dụ
+smoke test rồi chạy full) hãy xoá `cached_data/<dataset>_*`. Với `--tgt cont`, cache của từng corruption được xoá ngay
+sau khi chạy xong để tránh đầy ổ.
+
+### Định dạng log
+
+`log/<dataset>/<TENT|EATA|SAR|BiTTA>/tgt_<...>/<log_prefix>/.../online_eval.json`, với `log_prefix =
+<method>_<dataset>_<setting>_s<seed>`; Continuous/Mixed nằm dưới `tgt_cont/` (Mixed: thư mục con `random/`), Fully nằm dưới
+`tgt_<unit>/`. Thư mục `<dataset>` là giá trị `--dataset` của `main.py`: `cifar10`, `cifar100`, `tiny-imagenet`, `pacs`,
+`imagenetR`, `colored-mnist`.
 
 ## Mở rộng project
 
-### Thêm dataset mới cho họ BiTTA-family
+### Thêm dataset mới
 
-1. Thêm entry `opt` mới vào `src/conf.py` (theo mẫu `CIFAR10Opt`/`PACSOpt` đã có).
-2. Viết class Dataset mới trong `src/data_loader/` (xem `PACSDataset.py` làm mẫu cho
-   dataset dạng `ImageFolder`, hoặc `CIFAR10Dataset.py` cho dạng `.npy`).
-3. Đăng ký nhánh `elif '<ten_dataset>' in conf.args.dataset:` trong `src/main.py` (khu
-   vực chọn `opt`).
-4. Nếu dùng chế độ `--tgt cont`, thêm `CONT_SEQUENCE_<TEN>` vào `conf.py` và đăng ký
-   nhánh tương ứng trong `main.py`.
-
-Ví dụ cụ thể cho WaterBirds: đã có sẵn loader ở
-`src/methods/deyo/dataset/waterbirds_dataset.py`, chỉ cần viết adapter theo 4 bước trên.
-
-### Thêm phương pháp TTA mới
-
-Đặt class mới kế thừa `DNN` (`src/learner/dnn.py`) vào `src/learner/<ten>.py` (xem
-`tent.py` — ngắn nhất — làm mẫu), rồi đăng ký `elif conf.args.method == "<TEN>":` trong
-`src/main.py`. Override `test_time_adaptation()` để cài thuật toán riêng.
+1. Thêm entry `opt` vào `src/conf.py` (theo mẫu `CIFAR10Opt`/`PACSOpt`).
+2. Viết class Dataset trong `src/data_loader/` trả về bộ ba `(ảnh, nhãn, nhãn_domain)`; đăng ký nhánh trong
+   `data_loader.domain_data_loader`.
+3. Đăng ký nhánh `elif '<tên>' in conf.args.dataset:` trong `src/main.py` (chọn `opt`).
+4. Thêm nhánh cho EATA (tính Fisher) trong `learner/eata.py` và lớp chuẩn hoá trong `utils/normalize_layer.py`.
+5. Thêm ca tương ứng trong `scripts/run_bitta_family.sh` và `results/aggregate_results.py`.
 
 ### Model
 
-Backbone chuẩn cho toàn bộ dự án là **ResNet-18** (`src/models/ResNet.py`, class
-`ResNetDropout18`) — có sẵn lớp Dropout sau mỗi residual block để phục vụ MC-Dropout
-(dùng bởi BiTTA và làm nền tảng ước lượng độ tin cậy cho các phương pháp khác). Không
-cần đổi kiến trúc khi thêm dataset hoặc method mới.
-
-## Ghi chú kỹ thuật theo từng phương pháp
-
-### DeYO — các sửa đổi wiring so với repo gốc
-
-`src/methods/deyo/main.py` có 2 chỗ được sửa so với repo gốc của tác giả. Cả hai đều là
-lựa chọn kiến trúc mạng (model selection); không đụng đến `methods/deyo.py`,
-`methods/tent.py`, `methods/eata.py`, `methods/sar.py` (các file cài đặt thuật toán, giữ
-nguyên 100%):
-
-1. **Nhánh `resnet18_bn`** cho `net` (dòng ~361) và `net_ewc` (dòng ~280): bản gốc chỉ xử
-   lý đúng trường hợp `dset == 'ColoredMNIST'` (tải một file pickle có sẵn) — nếu chạy
-   `resnet18_bn` với dataset khác, biến `net`/`net_ewc` sẽ không được gán, gây lỗi
-   `UnboundLocalError` khi thực thi `net.cuda()`. Đã bổ sung nhánh tổng quát
-   `Resnet.__dict__['resnet18'](pretrained=True)` cho các dataset còn lại — cùng cách gọi
-   mà bản gốc đã dùng cho `resnet50_bn_torch`.
-2. **Assert tại `if args.dset == 'Waterbirds':`** (dòng ~190): bản gốc ép cứng
-   `args.model == 'resnet50_bn_torch'`. Đã nới thành
-   `in ('resnet50_bn_torch', 'resnet18_bn')`.
-
-> **Cảnh báo khoa học:** tổ hợp DeYO + ResNet-18 + Waterbirds (và các dataset kiểu
-> ImageNet-C) là phần mở rộng để nhất quán với backbone ResNet-18 xuyên suốt đề án,
-> **không phải** cấu hình đã được paper DeYO kiểm chứng (paper gốc chỉ báo cáo
-> ResNet-50-BN cho Waterbirds — Table 3). Khi báo cáo kết quả từ tổ hợp này trong luận
-> văn, cần nêu rõ đây là thực nghiệm mở rộng, không phải tái lập số liệu paper.
-
-### MEMO — dùng lại checkpoint ResNet-18 của họ BiTTA-family
-
-Khác với DeYO (tự quản lý checkpoint riêng), `src/methods/memo/main.py` nạp trực tiếp
-`pretrained_weights/<dataset>/cp_last_<seed>.pth.tar` — cùng file mà TENT/EATA/SAR/BiTTA
-dùng. Điều này khả thi vì `ResNetDropout18` (`src/models/ResNet.py`) chỉ thêm `forward()`
-tuỳ biến, không đổi tên tham số so với `torchvision.models.resnet18` gốc, nên state_dict
-tương thích 1:1.
-
-`build_model()` trong `main.py` của MEMO lặp lại đúng trình tự khởi tạo của
-`src/learner/dnn.py` (thay `fc` theo `num_class` trước khi `load_state_dict`) và áp dụng
-đúng hệ số chuẩn hoá (mean/std) mà checkpoint đó được train cùng — lấy từ
-`src/utils/normalize_layer.py` (CIFAR-10: `[0.4914, 0.4822, 0.4465]` /
-`[0.2471, 0.2435, 0.2616]`, CIFAR-100 và các dataset độ phân giải ImageNet tương tự).
-Các hệ số này được đọc và sao chép trực tiếp — không import chéo — để giữ `memo/` tự chứa
-độc lập như `deyo/`.
-
-Nhờ vậy cả 7 phương pháp trong đề án xuất phát từ đúng một bộ trọng số pretrained, đảm
-bảo so sánh công bằng.
-
-### Định dạng log khác nhau giữa các họ phương pháp
-
-- **Họ BiTTA** (`src/main.py`):
-  `log/<dataset>/BiTTA/tgt_cont/<log_prefix>/<unit>/online_eval.json` — JSON có cấu trúc,
-  đọc bằng `results/aggregate_results.py`.
-- **DeYO** (`src/methods/deyo/main.py`) và **MEMO** (`src/methods/memo/main.py`): file
-  `.txt` ghi dòng kết quả
-  `"Result under <corruption>-<level>. The adaptation accuracy of <METHOD> is  average: X.XXXXX"`
-  trong thư mục `--output` đã chỉ định — cả hai đọc chung bằng
-  `results/aggregate_deyo_results.py` (dùng regex, không phân biệt method).
+Chỉ dùng ResNet-18: `resnet18` (`ResNet.ResNet18`, kiểu CIFAR, train từ đầu) và `resnet18_pretrained` (`ResNetDropout18` —
+torchvision ResNet-18 + Dropout sau mỗi residual block cho MC-Dropout).
 
 ## License / nguồn gốc code
 
-| Thành phần | Nguồn gốc |
-|---|---|
-| `src/main.py`, `src/conf.py`, `src/learner/*`, `src/data_loader/*`, `src/models/*`, `src/utils/*` | Repo BiTTA gốc của đề án — không chỉnh sửa logic thuật toán |
-| `src/methods/deyo/*` | Sao chép nguyên vẹn từ repo chính thức của tác giả DeYO (xem `LICENSE` và `DEYO_ORIGINAL_README.md` trong cùng thư mục) |
-| `src/methods/memo/*` | Viết lại tự chứa (self-contained) dựa trên đúng thuật toán và augmentation pipeline (augmix) của repo chính thức MEMO (Zhang et al., NeurIPS 2022, [github.com/zhangmarvin/memo](https://github.com/zhangmarvin/memo)) — hàm `marginal_entropy` / `adapt_single` / augmix trong `main.py` và `utils/augmix.py` sao chép logic gốc; phần đọc dữ liệu (`utils/data.py`) và việc dùng lại checkpoint ResNet-18 của BiTTA-family là phần viết mới để khớp với cấu trúc dataset/checkpoint sẵn có trong project |
+`src/*` là repo BiTTA gốc của đề án đã được rút gọn theo kịch bản (chỉ giữ TENT/EATA/SAR/BiTTA, 6 dataset, ResNet-18),
+cộng phần chọn mẫu C1 + C4 của Proposal trong `learner/dnn.py`; không chỉnh sửa logic thuật toán của các phương pháp.
 
 ## Trạng thái kiểm chứng
 
-- Chuỗi import (`conf`, `learner.*`, `data_loader.*`, `models.*`, `utils.*`) đã chạy test
-  thực tế, xác nhận đúng.
-- `src/main.py` chạy được tới bước parse argument + chọn device (dừng ở
-  `torch.cuda.set_device` do máy build project này không có PyTorch bản CUDA — sẽ chạy
-  bình thường trên máy có GPU thật).
-- `src/methods/memo/main.py`: đã test thực tế `build_model()` (nạp state_dict giả lập
-  vào `torchvision.models.resnet18` sau khi thay `fc`) và `marginal_entropy()` trên CPU,
-  cùng pipeline augmix (`utils/augmix.py`) trên ảnh giả lập — cả hai chạy đúng, không lỗi.
-- Chưa có dữ liệu / checkpoint thật (theo đúng yêu cầu ban đầu) — xem mục
-  [Chuẩn bị dữ liệu](#chuẩn-bị-dữ-liệu) trước khi chạy full.
+Đã chạy thử **trên CPU với dữ liệu giả** (ảnh ngẫu nhiên, đúng cấu trúc thư mục của loader) và checkpoint tự huấn luyện
+bằng `--method Src`. Chưa chạy trên dữ liệu và GPU thật, nên **chưa có số accuracy nào**; luồng chạy, đường dẫn log và
+tổng hợp kết quả đã được kiểm tra.

@@ -1,8 +1,10 @@
 log/
 cached_data/
 pretrained_weights/**/*.pth.tar
-datasets/**/*
-!datasets/**/README.md
+dataset/**/*
+!dataset/**/README.md
+domainbed_dataset/**/*
+!domainbed_dataset/**/README.md
 __pycache__/
 *.pyc
 raw_logs/

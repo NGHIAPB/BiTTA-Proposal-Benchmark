@@ -1,5 +1,6 @@
 # EATA (Niu et al., 2022) — loc mau theo entropy + Fisher regularization chong quen.
 method: EATA
+binary_feedback: true   # --enable_bitta ("TENT*/EATA*/SAR*" cua paper), chay bang scripts/run_bitta_family.sh
 model: resnet18
 epoch: 1
 lr: 0.001

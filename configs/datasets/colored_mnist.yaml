@@ -1,0 +1,13 @@
+dataset: colored-mnist        # gia tri --dataset cua src/main.py
+num_class: 2                  # digit < 5 / digit >= 5
+img_size: 28
+seeds: [0, 1, 2]
+setting: fully                # 1 domain dich ("test") -> chi Fully TTA
+tgt: test
+src_domain: all_train         # train1 + train2, dung khi huan luyen nguon --method Src
+data_path: ../dataset/ColoredMNIST
+checkpoint_path: ../pretrained_weights/colored-mnist   # cp_last_<seed>.pth.tar, tu huan luyen (pretrained_weights/README.md)
+notes: >
+  Loader: src/data_loader/COLOREDMNISTDataset.py -- tu tao train1.pt/train2.pt/test.pt tu MNIST (can internet lan dau, hoac
+  dat san 3 file .pt). Moi truong test dao 90% tuong quan mau-nhan. Paper BiTTA bao cao 1 con so (Table 7).
+  Cau hinh BiTTA/EATA la muon tu CIFAR (anh nho) -- chua tinh chinh.

@@ -1,12 +1,11 @@
-# Fully TTA: khong can thiep giai doan huan luyen (chi dung model pretrained co san),
-# thich ung THUAN TUY luc kiem thu. Day la mac dinh cua ca BiTTA-family lan DeYO-family.
+# Fully TTA: moi corruption/domain la 1 lan chay RIENG, khoi dong tu mo hinh nguon (khong mang trang thai
+# giua cac corruption); chi thich ung luc kiem thu.
 #
-# BiTTA-family (src/main.py):
-#   Khong can flag gi dac biet -- moi phuong phap (TENT/EATA/SAR/BiTTA) deu la Fully TTA.
-#
-# DeYO-family (src/methods/deyo/main.py):
-#   --continual False   (mac dinh cua DeYO)
+#   src/main.py --tgt <unit>          (scripts/run_bitta_family.sh <method> <dataset> fully <seed>: tu lap qua cac unit)
+#   unit = <corruption>-5 (CIFAR-C, Tiny-ImageNet-C) | art_painting/cartoon/sketch (PACS) | corrupt (ImageNet-R) | test (ColoredMNIST)
 setting: fully_tta
+datasets: [cifar10_c, cifar100_c, tiny_imagenet_c, pacs, imagenet_r, colored_mnist]
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal]
 description: >
-  Mo hinh pretrained duoc dung nguyen, khong sua doi loss/kien truc luc huan luyen.
-  Thich ung chi dien ra tai thoi diem kiem thu (test-time), theo tung anh/batch.
+  ImageNet-R va ColoredMNIST chi co 1 domain dich nen chi chay duoc setting nay (khop Table 7 cua paper BiTTA, moi
+  dataset 1 con so). ImageNet-R gioi han --nsample 10000 (RAM); ColoredMNIST can checkpoint tu huan luyen nguon.

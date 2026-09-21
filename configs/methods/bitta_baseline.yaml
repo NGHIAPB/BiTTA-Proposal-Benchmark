@@ -1,7 +1,7 @@
 # BiTTA-baseline — nguyen ban theo paper Lee et al. (ICML 2025), sample_selection=mc_conf.
 method: BiTTA
 sample_selection: mc_conf
-model: resnet18   # doi thanh resnet18_pretrained cho Tiny-ImageNet-C / PACS / WaterBirds
+model: resnet18   # resnet18_pretrained cho Tiny-ImageNet-C / PACS / ImageNet-R / ColoredMNIST
 epoch: 3          # 5 cho Tiny-ImageNet-C
 lr: 0.0001        # 0.00005 cho Tiny-ImageNet-C; 0.001 cho PACS
 weight_decay: 0.0 # 0.05 cho PACS (theo Appendix D.2 cua paper goc)

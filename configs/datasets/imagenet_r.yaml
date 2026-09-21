@@ -1,0 +1,12 @@
+dataset: imagenetR            # gia tri --dataset cua src/main.py
+num_class: 200                # mo hinh ResNet-18 pretrained 1000 lop duoc loc ve 200 lop (conf.IMAGENET_R['indices_in_1k'])
+img_size: 224
+seeds: [0, 1, 2]
+setting: fully                # 1 domain dich ("corrupt") -> chi Fully TTA
+tgt: corrupt
+data_path: ../dataset/imagenet-r
+checkpoint_path: null         # torchvision pretrained (--model resnet18_pretrained), khong can file
+nsample: 10000                # mac dinh cua scripts/run_bitta_family.sh (30.000 anh ~ 18 GB RAM sau khi nap)
+notes: >
+  Loader: src/data_loader/IMAGENETRDataset.py. Paper BiTTA chi bao cao 1 con so/dataset (Table 7, Appendix C).
+  Cau hinh BiTTA/EATA la muon tu Tiny-ImageNet-C (cung 224px, ~200 lop) -- chua tinh chinh.

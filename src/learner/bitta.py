@@ -8,7 +8,6 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 
 import conf
-from utils import cotta_utils, mecta
 from .dnn import DNN
 from utils.loss_functions import *
 
@@ -36,7 +35,7 @@ class BiTTA(DNN):
         """
         self.atta_src_net = None
         super(BiTTA, self).__init__(*args, **kwargs)
-        assert (conf.args.memory_type in ["ActivePriorityFIFO", "ActivePriorityPBRS"])
+        assert (conf.args.memory_type in ["ActivePriorityFIFO"])
 
     def reset(self):
         """Reset the BiTTA model to its initial state."""
@@ -68,9 +67,6 @@ class BiTTA(DNN):
 
                 module.weight.requires_grad_(True)
                 module.bias.requires_grad_(True)
-
-        if conf.args.enable_mecta:  # for additional study
-            self.net = mecta.prepare_model(self.net).to(device)
 
         optimizer = torch.optim.SGD(
                         self.net.parameters(),

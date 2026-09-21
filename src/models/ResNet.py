@@ -45,45 +45,6 @@ class BasicBlock(nn.Module):
         return out
 
 
-class Bottleneck(nn.Module):
-    expansion = 4
-
-    def __init__(self, in_planes, planes, stride=1):
-        super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
-                               stride=stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, self.expansion *
-                               planes, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(self.expansion*planes)
-
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion*planes:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_planes, self.expansion*planes,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(self.expansion*planes)
-            )
-
-        self.dropout = 0.0
-
-    def forward(self, x):
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = F.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = F.relu(out)
-        out = self.conv3(out)
-        out = self.bn3(out)
-        shortcut = self.shortcut(x)
-        out += shortcut
-        out = F.relu(out)
-        return out
-
-
 class ResNet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10, filter=None):
         super(ResNet, self).__init__()
@@ -140,34 +101,8 @@ def ResNet18(filter=None):
     return ResNet(BasicBlock, [2, 2, 2, 2], filter=filter)
 
 
-def ResNet34(filter=None):
-    return ResNet(BasicBlock, [3, 4, 6, 3], filter=filter)
-
-
-def ResNet50(filter=None):
-    return ResNet(Bottleneck, [3, 4, 6, 3], filter=filter)
-
-
-def ResNet101(filter=None):
-    return ResNet(Bottleneck, [3, 4, 23, 3], filter=filter)
-
-
-def ResNet152(filter=None):
-    return ResNet(Bottleneck, [3, 8, 36, 3], filter=filter)
-
-
-def test():
-    net = ResNet18()
-    y = net(torch.randn(1, 3, 32, 32))
-    print(y.size())
-
-
 def ResNetDropout18(filter=None):
     return ResNetDropout(torchvision.models.resnet.BasicBlock, [2, 2, 2, 2], filter=filter)
-
-def ResNetDropout50(filter=None):
-    return ResNetDropout(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], filter=filter)
-
 
 class ResNetDropout(torchvision.models.resnet.ResNet):
     """
@@ -222,70 +157,3 @@ class ReverseLayerF(Function):
 	def backward(ctx, grad_output):
 		output = grad_output.neg()
 		return output, None
-
-class ResNet50_DOMAINNET(nn.Module):
-    def __init__(self, bottleneck_dim=256, num_classes=126):
-        super().__init__()
-
-        # 1) ResNet backbone (up to penultimate layer)
-        # if not self.use_bottleneck:
-        #     pretrained = torchvision.models.resnet50(pretrained=True)
-        #     model = ResNetDropout50()
-        #     model.load_state_dict(pretrained.state_dict())
-        #     modules = list(model.children())[:-1]
-        #     self.encoder = nn.Sequential(*modules)
-        #     self._output_dim = model.fc.in_features
-        # 2) ResNet backbone + bottlenck (last fc as bottleneck)
-        # else:
-        pretrained = torchvision.models.resnet50(pretrained=True)
-        model = ResNetDropout50()
-        model.load_state_dict(pretrained.state_dict())
-        model.fc = nn.Linear(model.fc.in_features, bottleneck_dim)
-        bn = nn.BatchNorm1d(bottleneck_dim)
-        self.encoder = model
-        self.bn_encoder = bn
-        self._output_dim = bottleneck_dim
-
-        self.fc = nn.utils.weight_norm(nn.Linear(self._output_dim, num_classes), dim=0)
-
-        # if checkpoint_path:
-        #     self.load_from_checkpoint(checkpoint_path)
-     
-    def forward(self, x, dropout=0.0, get_embedding=False, reverse_grad=False):
-        # 1) encoder feature
-        feat = self.encoder(x, dropout=dropout, get_embedding=False, reverse_grad=reverse_grad)
-        if len(x) > 1:
-            feat = self.bn_encoder(feat)
-        
-        feat = torch.flatten(feat, 1)
-
-        logits = self.fc(feat)
-        
-        if get_embedding:
-            return logits, feat
-        return logits
-
-    def get_params(self):
-        """
-        Backbone parameters use 1x lr; extra parameters use 10x lr.
-        """
-        backbone_params = []
-        extra_params = []
-
-        resnet = self.encoder
-        for module in list(resnet.children())[:-1]:
-            backbone_params.extend(module.parameters())
-        # bottleneck fc + (bn) + classifier fc
-        extra_params.extend(resnet.fc.parameters())
-        extra_params.extend(self.bn_encoder.parameters())
-        extra_params.extend(self.fc.parameters())
-
-        # exclude frozen params
-        backbone_params = [param for param in backbone_params if param.requires_grad]
-        extra_params = [param for param in extra_params if param.requires_grad]
-
-        return backbone_params, extra_params
-    
-
-        
-        

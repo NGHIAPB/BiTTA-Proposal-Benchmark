@@ -13,7 +13,7 @@ Chua co du lieu trong thu muc nay (chi la scaffold).
 ## Xu ly ve dinh dang project dung
 
 ```
-python ../../src/process_cifar.py cifar-10c
+python src/process_cifar.py cifar-10c   # CHAY TU THU MUC GOC project (script doc dataset/CIFAR-10-C va dataset/cifar-10-batches-py theo os.getcwd())
 ```
 
 Script se doc 2 nguon tren va sinh ra cau truc thu muc ma `src/data_loader/CIFAR10Dataset.py`
@@ -33,7 +33,6 @@ CIFAR-10-C/
 
 ## Checkpoint pretrain di kem
 
-Checkpoint ResNet-18 huan luyen tren CIFAR-10 sach (`pretrained_weights/cifar10/
-cp_last_<seed>.pth.tar`) can duoc train rieng truoc khi chay TTA — xem
-`pretrained_weights/README.md`. MEMO (`src/methods/memo/`) dung lai chinh checkpoint
-nay, xem muc "MEMO dung lai checkpoint ResNet-18" trong README.md o thu muc goc project.
+Checkpoint ResNet-18 (kieu CIFAR, `--model resnet18`) huan luyen tren CIFAR-10 sach
+(`pretrained_weights/cifar10/cp_last_<seed>.pth.tar`) can duoc train rieng truoc khi chay TTA — xem
+`pretrained_weights/README.md`.

@@ -5,13 +5,10 @@ import time
 import math
 
 
-from .IMAGENETDataset import ImageNetDataset
 from .TINYIMAGENETDataset import TinyImageNetDataset
 from .CIFAR10Dataset import CIFAR10Dataset
 from .CIFAR100Dataset import CIFAR100Dataset
 from .PACSDataset import PacsDataset
-from .VLCSDataset import VlcsDataset
-from .DOMAINNET126Dataset import DOMAINNET126Dataset
 from .IMAGENETRDataset import ImageNetRDataset
 from .COLOREDMNISTDataset import ColoredMNISTDataset
 
@@ -181,7 +178,7 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
         elif isinstance(domains, (list,)):
             processed_domains = domains
             if len(domains) > 1:
-                if dataset not in ['pacs', 'vlcs', 'cifar10']:
+                if dataset not in ['pacs', 'cifar10']:
                     raise NotImplementedError
         else:
             processed_domains = [domains]
@@ -201,23 +198,7 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
     ##-- load dataset per each domain
     print('Domains:{}'.format(processed_domains))
 
-    if dataset in ['imagenetoutdist', 'cifar10outdist', 'cifar100outdist']:
-
-        cond = processed_domains
-        filename = f"{dataset}_{conf.args.outdist}_{conf.args.outdist_size}_{conf.args.outdist_class}_{conf.args.seed}"
-        transform = 'src' if is_src else 'val'
-        # loaded_data = load_cache(filename, processed_domains,
-        #                          file_path, transform=transform)
-        #
-        # if not loaded_data:
-        loaded_data = OutDistDataset(base=dataset, domains=cond, max_source=num_source, transform=transform,
-                                    outdist=conf.args.outdist, outdist_size=conf.args.outdist_size, outdist_class=conf.args.outdist_class)
-            # save_cache(loaded_data, filename,
-            #            processed_domains, file_path, transform=transform)
-        train_data = loaded_data
-        entire_datasets.append(train_data)
-
-    elif dataset in ['cifar10']:
+    if dataset in ['cifar10']:
 
         cond = processed_domains
 
@@ -245,22 +226,6 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
         train_data = loaded_data
         entire_datasets.append(train_data)
 
-    elif dataset in ['imagenet']:
-
-        cond = processed_domains
-        transform = 'src' if is_src else 'val'
-
-        file_path = os.path.join(file_path, 'imagenet', cond[0], str(5))
-        loaded_data = load_cache(dataset, processed_domains, file_path, transform=transform)
-
-        if not loaded_data:
-            loaded_data = ImageNetDataset(file=file_path, domain=cond[0], max_source=num_source, transform=transform)
-            save_cache(loaded_data, dataset, processed_domains, file_path, transform=transform)
-
-        train_data = loaded_data
-        entire_datasets.append(train_data)
-    
-    
     elif dataset in ['tiny-imagenet']:
 
         cond = processed_domains
@@ -291,46 +256,18 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
         train_data = loaded_data
         entire_datasets.append(train_data)
         
-    elif dataset in ['vlcs']:
-        
-        cond = processed_domains
-
-        transform = 'src' if is_src else 'val'
-        
-        loaded_data = load_cache(dataset, processed_domains, file_path, transform=transform)
-
-        if not loaded_data:
-            loaded_data = VlcsDataset(file=file_path, domains=cond, max_source=num_source, transform=transform)
-            save_cache(loaded_data, dataset, processed_domains, file_path, transform=transform)
-
-        train_data = loaded_data
-        entire_datasets.append(train_data)
-    
-    elif dataset in ['domainnet-126']:
-        
-        cond = processed_domains
-
-        transform = 'src' if is_src else 'val'
-        
-        loaded_data = load_cache(dataset, processed_domains, file_path, transform=transform)
-
-        if not loaded_data:
-            loaded_data = DOMAINNET126Dataset(file=file_path, domains=cond, max_source=num_source, transform=transform)
-            save_cache(loaded_data, dataset, processed_domains, file_path, transform=transform)
-
-        train_data = loaded_data
-        entire_datasets.append(train_data)
-
     elif dataset in ['imagenetR']:
 
         cond = processed_domains
         transform = 'src' if is_src else 'val'
 
-        loaded_data = load_cache(dataset, processed_domains, file_path, transform=transform)
-
-        if not loaded_data:
-            loaded_data = ImageNetRDataset(file=file_path, domain=cond[0], max_source=num_source, transform=transform)
-            save_cache(loaded_data, dataset, processed_domains, file_path, transform=transform)
+        # ImageNet-R = 30.000 anh: --nsample gioi han truoc so anh THUC SU doc vao RAM (~0.6 MB/anh sau khi
+        # target_data_processing). Khong cache doi tuong dataset vi tap con phu thuoc --nsample/--seed.
+        max_samples = None
+        if not is_src and conf.args.nsample < 10 ** 7:
+            max_samples = int(conf.args.nsample)
+        loaded_data = ImageNetRDataset(file=file_path, domain=cond[0], max_source=num_source, transform=transform,
+                                       max_samples=max_samples)
 
         train_data = loaded_data
         entire_datasets.append(train_data)
@@ -342,7 +279,7 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
         cond = processed_domains
         # transform = 'src' if is_src else 'val'
         import torchvision.transforms as transforms
-        loaded_data = ColoredMNISTDataset(root="dataset/colored_mnist", env=cond[0],# flip=True,
+        loaded_data = ColoredMNISTDataset(root=conf.COLORED_MNIST['file_path'], env=cond[0],# flip=True,
                                             transform=transforms.Compose([
                                                 transforms.ToTensor(),
                                                 transforms.Normalize((0.1307, 0.1307, 0.), (0.3081, 0.3081, 0.3081))

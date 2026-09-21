@@ -1,19 +1,15 @@
-import os
-import warnings
-import torch.utils.data
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
-from torchvision.datasets import MNIST, ImageFolder
-
-from PIL import Image
-
-import pandas as pd
-import time
+# ImageNet-R (Hendrycks et al., 2021): 30.000 anh "rendition" (tranh ve, hoat hoa, dieu khac...) cua 200 lop
+# ImageNet. Chi co 1 domain dich duy nhat ("corrupt") -> chi chay duoc Fully TTA (khong co continuous/mixed).
+#
+# Cau truc thu muc: dataset/imagenet-r/<200 thu muc wnid>/*.jpg   (ban tai chinh thuc imagenet-r.tar)
+# Nhan = thu tu sap xep cua 200 ten thu muc; mo hinh ResNet-18 pretrained 1000 lop duoc loc ve 200 lop bang
+# conf.IMAGENET_R['indices_in_1k'] (ResNetDropout(filter=...), xem learner/dnn.py) -> khong can checkpoint.
 import numpy as np
-import sys
+import torch.utils.data
+import torchvision.transforms as transforms
+from torchvision.datasets import ImageFolder
+
 import conf
-import json
-import tqdm as tqdm
 
 opt = conf.IMAGENET_R
 
@@ -22,33 +18,16 @@ class ImageNetRDataset(torch.utils.data.Dataset):
 
     def __init__(self, file='',
                  domain=None, activities=None,
-                 max_source=100, transform='none'):
-        
-        st = time.time()
+                 max_source=100, transform='none', max_samples=None):
         self.domain = domain
         self.activity = activities
         self.max_source = max_source
-
-        self.domain = domain
-        self.features = None
-        self.class_labels = None
-        self.domain_labels = None
+        self.max_samples = max_samples
         self.file_path = opt['file_path']
         self.transform_type = transform
 
-        assert (len(domain) > 0)
-        if domain.startswith('original'):
-            self.path = 'dataset/ImageNet-C/origin/Data/CLS-LOC/train/'
-        elif domain.startswith('test'):
-            self.path = 'dataset/ImageNet-C/origin/Data/CLS-LOC/val/'
-        elif domain == "corrupt":
-            self.path = None
-        else:
-            raise NotImplementedError
-            # self.path = 'corrupted/'
-            # corruption, severity = domain.split('-')
-            # self.path += corruption + '/' + severity + '/'
-            
+        assert domain == "corrupt", "ImageNet-R chi co 1 domain dich: 'corrupt' (nhan %r)" % (domain,)
+
         if transform == 'src':
             self.transform = transforms.Compose([
                 transforms.RandomResizedCrop(224),
@@ -61,48 +40,28 @@ class ImageNetRDataset(torch.utils.data.Dataset):
                 transforms.CenterCrop(224),
                 transforms.ToTensor()
             ])
-
         else:
             raise NotImplementedError
 
-        self.preprocessing()
-
-    def preprocessing(self):
-
-        path = self.file_path if self.path == None else self.path
-        self.features = []
-        self.class_labels = []
-        self.domain_labels = []
-        print('preprocessing images..')
-        self.dataset = ImageFolder(path)
-
-    def load_features(self):
-        path = self.file_path if self.path == None else self.path
-        dataset = ImageFolder(path, transform=self.transform)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False, pin_memory=False, drop_last=False)
-        # transformed_dataset = []
-        for b_i, data in enumerate(dataloader):  # must be loaded from dataloader, due to transform in the __getitem__()
-            feat, cl = data
-            # convert a batch of tensors to list, and then append to our list one by one
-            feats = torch.unbind(feat, dim=0)
-            cls = torch.unbind(cl, dim=0)
-            for i in range(len(feats)):
-                # transformed_dataset.append((feats[i], cls[i]))
-                self.features.append(feats[i])
-                self.class_labels.append(cls[i])
-                self.domain_labels.append(0)
-        self.features = np.stack(self.features)
-        self.class_labels = np.stack(self.class_labels)
-        self.domain_labels = np.stack(self.domain_labels)
+        self.dataset = ImageFolder(self.file_path)
+        n = len(self.dataset.samples)
+        if self.max_samples is not None and 0 < self.max_samples < n:
+            # target_data_processing giu TOAN BO tensor float32 3x224x224 (~0.6 MB/anh) trong RAM
+            # -> chi giu max_samples anh (giu thu tu goc de --tgt_train_dist xu ly tiep).
+            if getattr(conf.args, 'tgt_train_dist', 1) == 0:  # "real order": n anh dau
+                keep = np.arange(self.max_samples)
+            else:  # ngau nhien theo --seed
+                seed = getattr(conf.args, 'seed', 0) or 0
+                keep = np.sort(np.random.RandomState(seed).choice(n, self.max_samples, replace=False))
+            self.dataset.samples = [self.dataset.samples[i] for i in keep]
+            self.dataset.targets = [self.dataset.targets[i] for i in keep]
+            self.dataset.imgs = self.dataset.samples
 
     def __len__(self):
         return len(self.dataset)
 
     def get_num_domains(self):
         return 1
-
-    def get_datasets_per_domain(self):
-        return self.datasets
 
     def __getitem__(self, idx):
         if isinstance(idx, torch.Tensor):
@@ -111,30 +70,3 @@ class ImageNetRDataset(torch.utils.data.Dataset):
         if self.transform:
             img = self.transform(img)
         return img, cl, torch.tensor(0)
-
-
-if __name__ == '__main__':
-    ### code for making imagenet validation data compatiable with ImageFolder!
-    '''
-    import os
-    root = '/mnt/sting/tsgong/WWW/dataset/ImageNet-C/origin/Data/CLS-LOC/val/'
-    f = open(root+'LOC_val_solution.csv', 'r')
-    i=0
-    for l in f:
-        if i ==0: # ignore header
-            i += 1
-            continue
-        filename=l.split(',')[0]
-        label=l.split(',')[1].split(' ')[0]
-        dir = root+label
-        ### 1. make dir
-        # if not os.path.exists(dir):
-        #     os.makedirs(dir)
-        # print(os.path.join(root,filename,'.JPEG'))
-        ### 2. move files to dir
-        print(label)
-        if os.path.isfile(os.path.join(root, filename + '.JPEG')):
-            os.rename(os.path.join(root, filename + '.JPEG'), os.path.join(dir, filename + '.JPEG'))
-        i += 1
-    print(i)
-    '''

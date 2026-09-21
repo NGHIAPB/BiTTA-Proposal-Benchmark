@@ -1,6 +1,7 @@
 # TENT (Wang et al., 2021) — chỉ cập nhật tham số BatchNorm bằng entropy minimization.
 # Runner: src/main.py (họ BiTTA-family, dùng chung pipeline continual TTA)
 method: TENT
+binary_feedback: true   # --enable_bitta ("TENT*/EATA*/SAR*" cua paper), chay bang scripts/run_bitta_family.sh
 model: resnet18
 epoch: 1
 lr: 0.001
@@ -8,5 +9,5 @@ weight_decay: 0.0
 update_every_x: 64
 memory_size: 64
 memory_type: "FIFO"
-use_learned_stats: true
+use_learned_stats: false  # tta.sh goc cua BiTTA khong dung --use_learned_stats cho TENT
 extra_flags: []

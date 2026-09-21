@@ -1,16 +1,11 @@
-# Mixed shift: nhieu loai corruption/domain bi TRON LAN NGAU NHIEN trong cung 1 dong,
-# thay vi di theo tung khoi rieng biet. Kho hon continuous vi mo hinh khong co
-# "khoang thoi gian on dinh" de thich nghi rieng voi 1 loai shift truoc khi gap loai khac.
+# Mixed shift (mixed data stream, Gui et al. 2024): cac corruption/domain bi TRON NGAU NHIEN trong cung 1 luong.
+# Kho hon continuous: khong co "khoang on dinh" cho tung loai shift.
 #
-# BiTTA-family (src/main.py):
-#   --tgt cont --random_setting
-#   (corruption_list duoc gop thanh 1 danh sach roi xao tron ngau nhien moi batch)
-#
-# DeYO-family (src/methods/deyo/main.py):
-#   --continual True   --exp_type mix_shifts
+#   src/main.py --tgt cont --random_setting   (scripts/run_bitta_family.sh <method> <dataset> mixed <seed>)
 setting: mixed_shift
+datasets: [cifar10_c, pacs]
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal]
 description: >
-  CHUA duoc chay trong de an hien tai -- day la huong mo rong da duoc de xuat
-  (dac biet cho PACS, de kiem tra gia thuyet "cold-start do thu tu domain co dinh"
-  ma khong can tang so seed).
-status: TODO
+  Chi PACS (giong paper BiTTA) va CIFAR-10-C (data_loader ho tro danh sach nhieu domain cho 2 dataset nay; paper khong
+  bao cao CIFAR-10-C o setting nay). CIFAR-100-C, Tiny-ImageNet-C: loader chua ho tro nen bi src/main.py tu choi.
+  Bao cao accuracy tich luy tai 25/50/75/100% luong du lieu (results/aggregate_results.py).

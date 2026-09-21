@@ -1,18 +1,10 @@
 torch>=2.0.0
 torchvision>=0.15.0
 numpy
-scipy
 pandas
 scikit-learn
 tqdm
-munch
-webdataset
-PyYAML
-joblib
 Pillow
-
-# Rieng cho DeYO (src/methods/deyo/)
-einops
-timm
-pycm
-matplotlib
+matplotlib     # COLOREDMNISTDataset.py import pyplot o dau file
+# Tuy chon: --wandb <project> (log len Weights & Biases)
+# wandb

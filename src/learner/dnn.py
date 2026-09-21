@@ -11,18 +11,16 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import torchvision
-import webdataset as wds
 
 import conf
 from data_loader.data_loader import load_cache, save_cache
-from models.ResNet import ResNetDropout18, ResNetDropout50
-from models.ViT import vit_b_16
-from utils.active_memory import ActivePriorityFIFO, ActivePriorityPBRS
+from models.ResNet import ResNetDropout18
+from utils.active_memory import ActivePriorityFIFO
 from utils import memory, active_memory
 from utils.calibration import expected_calibration_error
 from utils.logging import *
 from utils.loss_functions import *
-from utils.memory import FIFO, ConfFIFO, HUS, Uniform, PBRS, CSTU
+from utils.memory import FIFO
 from utils.normalize_layer import *
 import utils.reset_utils as reset_utils
 import random
@@ -71,44 +69,24 @@ class DNN():
         else:
             filter_ = None
 
-        # Init & prepare model
-        # Load model
-        if "pretrained" in conf.args.model:
+        # Init & prepare model. Kich ban chi dung ResNet-18: "resnet18" (kieu CIFAR, huan luyen tu dau) hoac
+        # "resnet18_pretrained" (torchvision, khoi tao ImageNet).
+        if conf.args.model == "resnet18_pretrained":
             pretrained = model_(pretrained=True)
-            if conf.args.model == "resnet18_pretrained":
-                model = ResNetDropout18(filter=filter_)
-                model.load_state_dict(pretrained.state_dict())
-            elif conf.args.model == "resnet50_pretrained":
-                model = ResNetDropout50(filter=filter_)
-                model.load_state_dict(pretrained.state_dict())
-            elif conf.args.model == "vitbase16_pretrained":
-                model = vit_b_16()
-                model.load_state_dict(pretrained.state_dict())
-            else:
-                raise NotImplementedError
+            model = ResNetDropout18(filter=filter_)
+            model.load_state_dict(pretrained.state_dict())
             del pretrained
+        elif conf.args.model == "resnet18":
+            model = model_(filter=filter_)
         else:
-            if conf.args.model == "vitbase16":
-                if conf.args.dataset == "cifar10":
-                    model = model_(image_size=conf.args.opt['img_size'], num_classes=conf.args.opt['num_class'], patch_size=conf.args.vit_patch_size)
-                else:
-                    raise model_()
-            elif conf.args.model == "resnet50_domainnet":
-                model = model_()
-            else:
-                model = model_(filter=filter_)
+            raise NotImplementedError(conf.args.model)
 
-        if conf.args.model in ['resnet50_domainnet']:
-            self.net = model
-        elif 'resnet' in conf.args.model:
-            if conf.args.dataset in ["imagenet", "imagenetoutdist", "imagenetR"]:
-                self.net = model
-            else:
-                num_feats = model.fc.in_features
-                num_class = conf.args.opt['num_class']
-                model.fc = nn.Linear(num_feats, num_class)
-                self.net = model
-        elif conf.args.model in ["vitbase16", "vitbase16_pretrained"]:
+        if conf.args.dataset == "imagenetR":
+            self.net = model  # giu nguyen fc 1000 lop; ResNetDropout(filter=...) loc ra 200 lop cua ImageNet-R
+        else:
+            num_feats = model.fc.in_features
+            num_class = conf.args.opt['num_class']
+            model.fc = nn.Linear(num_feats, num_class)
             self.net = model
 
         if conf.args.load_checkpoint_path:
@@ -128,26 +106,13 @@ class DNN():
         self.optimizer = self.init_learner()
         self.class_criterion = nn.CrossEntropyLoss()
 
-        # Enhanced TTA initialization
-        if conf.args.enhance_tta:
-            self.enhance_tta()
-
         # Initialize memory for online learning
         if conf.args.memory_type == 'FIFO':
             self.mem = memory.FIFO(capacity=conf.args.memory_size)
-        elif conf.args.memory_type == 'HUS':
-            self.mem = memory.HUS(capacity=conf.args.memory_size, threshold=conf.args.high_threshold)
-        elif conf.args.memory_type == 'CSTU':
-            self.mem = memory.CSTU(capacity=conf.args.memory_size, num_class=conf.args.opt['num_class'],
-                                         lambda_t=1, lambda_u=1)
-        elif conf.args.memory_type == 'ConfFIFO':
-            self.mem = memory.ConfFIFO(capacity=conf.args.memory_size, threshold=conf.args.high_threshold)
         elif conf.args.memory_type == "ActivePriorityFIFO":
             self.mem = active_memory.ActivePriorityFIFO(conf.args.update_every_x, pop="", delay=conf.args.feedback_delay)
-        elif conf.args.memory_type == "ActivePriorityPBRS":
-            self.mem = active_memory.ActivePriorityPBRS(conf.args.update_every_x, pop="")
         else:
-            raise NotImplementedError
+            raise NotImplementedError(conf.args.memory_type)
 
         if conf.args.enable_bitta:
             self.active_mem = active_memory.ActivePriorityFIFO(conf.args.n_active_sample, pop="")
@@ -308,27 +273,6 @@ class DNN():
             self.target_data_processing()
             save_cache(self.target_train_set, filename, cond, file_path, transform=None)
         
-        if conf.args.save_wds_dataset:
-            try:
-                if not os.path.exists("cache_wds_cifar10_random_setting"):
-                    os.makedirs("cache_wds_cifar10_random_setting")
-            except:
-                pass
-            sink = wds.TarWriter(os.path.join(f"cache_wds_cifar10_random_setting/{filename}_{cond}" + ".tar"))
-            
-            for index in range(len(self.target_train_set[0])):
-                input, output, dls = torchvision.transforms.functional.to_pil_image(self.target_train_set[0][index]), self.target_train_set[1][index], self.target_train_set[2][index]
-                sink.write(
-                    {
-                        "__key__": "sample_" + str(index),
-                        "info": "",
-                        "input.jpg": input,
-                        "output.cls": output.item(),
-                        "dls.cls": dls.item(),
-                    }
-                )
-
-            sink.close()
 
     def target_data_processing(self):
         """
@@ -492,19 +436,6 @@ class DNN():
                 raise NotImplementedError
         else:
             self.checkpoint = torch.load(checkpoint_path, map_location=f'cuda:{conf.args.gpu_idx}')
-            if conf.args.dataset == "domainnet-126":
-                temp_dict = {}
-                for k, v in self.checkpoint['state_dict'].items():
-                    keywords = k.split(".")[1:]
-                    for i in range(1, len(keywords)):
-                        if keywords[i-1] == "encoder":
-                            if keywords[i] == "1":
-                                keywords[i-1] = "bn_encoder"
-                            keywords = keywords[:i] + keywords[i+1:]
-                            break
-                    target_k = ".".join(keywords)
-                    temp_dict[target_k] = v
-                self.checkpoint = temp_dict
             self.net.load_state_dict(self.checkpoint, strict=True)
             self.net.to(device)
 
@@ -812,12 +743,8 @@ class DNN():
 
             progress_checkpoint = [int(i * (len(self.target_train_set[0]) / 100.0)) for i in range(1, 101)]
             for i in range(epoch + 1 - len(current_samples[0]), epoch + 1):
-                if conf.args.wds_path is not None:
-                    if i % conf.args.update_every_x == 0:
-                        print(f'[Online Eval][NumSample:{i}][Epoch:{i}][Accuracy:{cumul_accuracy}]')
-                else:
-                    if i in progress_checkpoint:
-                        print(f'[Online Eval][NumSample:{i}][Epoch:{progress_checkpoint.index(i) + 1}][Accuracy:{cumul_accuracy}]')
+                if i in progress_checkpoint:
+                    print(f'[Online Eval][NumSample:{i}][Epoch:{progress_checkpoint.index(i) + 1}][Accuracy:{cumul_accuracy}]')
 
         # Update JSON evaluation metrics
         self.json_eval['gt'] = true_cls_list
@@ -833,28 +760,13 @@ class DNN():
             is_train_offline (bool): Whether to perform offline training evaluation
         """
         if is_train_offline:
-            if conf.args.wds_path is not None:
-                count_num_samples = 0
-                while True:
-                    try:
-                        self.target_train_set = self.iter_target_train_set.next()
-                        self.target_train_set[1] = self.target_train_set[1]
-                    except:
-                        break
-                    
-                    feats, cls, dls = self.target_train_set
-                    current_sample = feats, cls, dls      
-                    count_num_samples += len(feats)
-                    self.evaluation_online(count_num_samples,
-                                        [list(current_sample[0]), list(current_sample[1]), list(current_sample[2])])
-            else:
-                feats, cls, dls = self.target_train_set
-                batchsize = conf.args.opt['batch_size']
-                for num_sample in range(0, len(feats), batchsize):
-                    current_sample = feats[num_sample:num_sample + batchsize], cls[num_sample:num_sample + batchsize], dls[
-                                                                                                                    num_sample:num_sample + batchsize]
-                    self.evaluation_online(num_sample + batchsize,
-                                        [list(current_sample[0]), list(current_sample[1]), list(current_sample[2])])
+            feats, cls, dls = self.target_train_set
+            batchsize = conf.args.opt['batch_size']
+            for num_sample in range(0, len(feats), batchsize):
+                current_sample = feats[num_sample:num_sample + batchsize], cls[num_sample:num_sample + batchsize], dls[
+                                                                                                                num_sample:num_sample + batchsize]
+                self.evaluation_online(num_sample + batchsize,
+                                    [list(current_sample[0]), list(current_sample[1]), list(current_sample[2])])
 
         json_file = open(self.write_path + 'online_eval.json', 'w')
         json = self.json_eval | self.json_active
@@ -906,14 +818,8 @@ class DNN():
                 y_pred, y_conf, y_entropy, y_energy, y_embeddings, y_pred_softmax, _ = self.model_inference(
                     f.unsqueeze(0))
 
-                if isinstance(mem, ConfFIFO) or isinstance(mem, HUS) or isinstance(mem, Uniform) or isinstance(mem, PBRS):
-                    mem.add_instance([f, y_pred.item(), d, y_conf.item(), c.item()])
-                elif isinstance(mem, CSTU):
-                    mem.add_instance([f, y_pred.item(), y_entropy.item(), c.item()])
-                elif isinstance(mem, ActivePriorityFIFO):
+                if isinstance(mem, ActivePriorityFIFO):
                     mem.add_u_instance([f, c.item(), d, y_entropy.item()])
-                elif isinstance(mem, ActivePriorityPBRS):
-                    mem.add_u_instance([f, c.item(), d, y_entropy.item(), y_pred.item()])
                 else:
                     raise NotImplementedError
 
@@ -927,25 +833,12 @@ class DNN():
         Returns:
             int: Training status (TRAINED, SKIPPED, or FINISHED)
         """
-        if conf.args.wds_path is not None:
-            if self.target_train_set is None:
-                current_num_sample_in_batch = 0
-            else:
-                current_num_sample_in_batch = (current_num_sample - 1) % len(self.target_train_set[0])
-            if current_num_sample_in_batch == 0:
-                try:
-                    self.target_train_set = self.iter_target_train_set.next()
-                except Exception as error:
-                    print("An exception occurred:", error)
-                    return FINISHED
-            current_sample = self.target_train_set[0][current_num_sample_in_batch], self.target_train_set[1][current_num_sample_in_batch], torch.tensor([0.0])
-        else:
-            if current_num_sample > len(self.target_train_set[0]):
-                return FINISHED
+        if current_num_sample > len(self.target_train_set[0]):
+            return FINISHED
 
-            batch_data, cls, dls = self.target_train_set
-            current_sample = batch_data[current_num_sample - 1], cls[current_num_sample - 1], dls[current_num_sample - 1]
-        
+        batch_data, cls, dls = self.target_train_set
+        current_sample = batch_data[current_num_sample - 1], cls[current_num_sample - 1], dls[current_num_sample - 1]
+
         self.add_instance_to_memory(current_sample, self.fifo)
         self.add_instance_to_memory(current_sample, self.mem)
         if conf.args.enable_bitta:
@@ -962,7 +855,7 @@ class DNN():
         
         self.pre_active_sample_selection()
         
-        if isinstance(self.mem, ActivePriorityFIFO) or isinstance(self.mem, ActivePriorityPBRS):
+        if isinstance(self.mem, ActivePriorityFIFO):
             self.active_sample_selection(self.mem, current_num_sample)
         elif conf.args.enable_bitta:
             self.active_sample_selection(self.active_mem, current_num_sample)
@@ -1012,8 +905,6 @@ class DNN():
         if dropout < 0:
             if conf.args.dataset == "pacs":
                 dropout = 0.4
-            elif conf.args.dataset == "vlcs":
-                dropout = 0.3
             elif conf.args.dataset == "tiny-imagenet":
                 dropout = 0.3
             elif conf.args.dataset == "cifar10":
@@ -1194,7 +1085,7 @@ class DNN():
             mem: Memory buffer containing candidate samples
             current_num_sample (int): Current sample number
         """
-        assert isinstance(mem, ActivePriorityFIFO) or isinstance(mem, ActivePriorityPBRS)
+        assert isinstance(mem, ActivePriorityFIFO)
     
         if conf.args.memory_size == 1:
             self.count_bs1 += 1
@@ -1217,7 +1108,7 @@ class DNN():
 
         self.net.train()
 
-        if isinstance(mem, ActivePriorityFIFO) or isinstance(mem, ActivePriorityPBRS):
+        if isinstance(mem, ActivePriorityFIFO):
             feats, gt_labels, domains, entropies = mem.get_u_memory()
         else:
             raise NotImplementedError
