@@ -11,6 +11,7 @@ raw_logs/
 *.tar.gz
 .DS_Store
 
-# Khong dua slide/bang so len repo
+# Khong dua slide/bang so/bang tinh len repo
 *.pptx
 *.csv
+*.xlsx
