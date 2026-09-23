@@ -309,10 +309,12 @@ def main():
             except Exception as e:
                 pass
 
-        # Don sach cache target_train_set cua corruption vua chay xong ngay lap tuc
-        # (chi co gia tri trong --tgt cont, moi corruption chi duyet 1 lan/tien trinh
-        # nen khong can giu lai -> tranh day dia (vd Tiny-ImageNet-C tren Kaggle 20GB)).
-        if conf.args.tgt == 'cont' and hasattr(learner, 'target_train_set'):
+        # Don sach cache target_train_set cua corruption vua chay xong ngay lap tuc, o MOI
+        # setting (Continuous/Mixed/Fully TTA). SUA: ban truoc chi xoa khi `--tgt cont`, nhung
+        # Fully TTA goi main.py voi `--tgt <1 corruption>` (khong phai 'cont') nen dieu kien do
+        # khong bao gio dung -> cache khong bao gio bi xoa, cong don qua nhieu corruption se
+        # day o dia (vd Tiny-ImageNet-C ~5-6GB/corruption tren gioi han 20GB cua Kaggle).
+        if hasattr(learner, 'target_train_set'):
             filename = f"{conf.args.dataset}_{conf.args.seed}_dist{conf.args.tgt_train_dist}"
             if conf.args.tgt_train_dist == 4:
                 filename += f"_gamma{conf.args.dirichlet_beta}"
