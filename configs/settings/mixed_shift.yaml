@@ -4,7 +4,7 @@
 #   src/main.py --tgt cont --random_setting   (scripts/run_bitta_family.sh <method> <dataset> mixed <seed>)
 setting: mixed_shift
 datasets: [cifar10_c, pacs]
-methods: [tent, eata, sar, bitta_baseline, bitta_proposal]
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal, deyo]   # tent/eata/sar co binary feedback; deyo: runner rieng (run_deyo_family.sh)
 description: >
   Chi PACS (giong paper BiTTA) va CIFAR-10-C (data_loader ho tro danh sach nhieu domain cho 2 dataset nay; paper khong
   bao cao CIFAR-10-C o setting nay). CIFAR-100-C, Tiny-ImageNet-C: loader chua ho tro nen bi src/main.py tu choi.

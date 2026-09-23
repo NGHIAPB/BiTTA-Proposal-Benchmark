@@ -7,6 +7,7 @@ from data_loader.PACSDataset import PacsDataset
 from data_loader.TINYIMAGENETDataset import TinyImageNetDataset
 from data_loader.IMAGENETRDataset import ImageNetRDataset
 from data_loader.COLOREDMNISTDataset import ColoredMNISTDataset
+from data_loader.WATERBIRDSDataset import WaterbirdsDataset
 
 from utils.loss_functions import *
 from utils.memory import FIFO
@@ -165,6 +166,8 @@ class EATA(ETA):
                                                 transforms.ToTensor(),
                                                 transforms.Normalize((0.1307, 0.1307, 0.), (0.3081, 0.3081, 0.3081))
                                             ]))
+        elif conf.args.dataset == "waterbirds":
+            fisher_dataset = WaterbirdsDataset(file="", domains=[corruption_list_[0]], max_source=9999, transform='val')
         else:
             raise NotImplementedError
 

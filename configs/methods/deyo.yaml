@@ -1,0 +1,20 @@
+# DeYO (Lee et al., ICLR 2024) -- loc/tai trong so mau theo PLPD (Patch Label Probability Difference) + entropy.
+# Runner rieng: scripts/run_deyo_family.sh -> src/methods/deyo/main.py (thuat toan giu nguyen tu repo tac gia).
+method: DeYO
+binary_feedback: false        # khong dung binary feedback (khong nhan nhan tu nguoi dung)
+settings: [continuous, mixed, fully]   # ca 3; waterbirds CHI o fully
+model: resnet18_scenario      # ResNet-18 + checkpoint dung chung voi ho BiTTA-family (dataset/scenario_dataset.py)
+test_batch_size: 64
+lr: 0.00025                   # (0.00025/64)*bs voi bs<32, nguoc lai 0.00025; nhan lr_mul
+lr_mul: 1                     # 5 cho waterbirds (giong DeYO goc)
+aug_type: patch
+patch_len: 4
+deyo_margin: 0.5              # x ln(num_class): nguong entropy loc mau
+deyo_margin_e0: 0.4           # x ln(num_class): Ent_0 trong trong so mau
+plpd_threshold: 0.2
+notes: >
+  Sua so voi repo tac gia (chi day noi/sua loi, khong doi thuat toan): (1) --continual nay THUC SU giu mo hinh/optimizer
+  giua cac corruption (ban goc dung lai tu checkpoint moi vong nen Continuous chay nhu Fully TTA); (2) them --unit de
+  Fully TTA chay tung don vi; (3) noi 7 dataset cua project qua dataset/scenario_dataset.py (--dset CIFAR10-C |
+  CIFAR100-C | TinyImageNet-C | PACS-scenario | ImageNetR-scenario | WaterBirds-scenario | ColoredMNIST-scenario).
+  Sieu tham so CHUA tinh chinh cho cac dataset ngoai ImageNet-C/Waterbirds/ColoredMNIST goc.

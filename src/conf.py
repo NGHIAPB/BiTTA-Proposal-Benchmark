@@ -297,6 +297,28 @@ COLORED_MNIST = {
     'tgt_domains': ["test"],
 }
 
+WATERBIRDSOpt = {
+    'name': 'waterbirds',
+    'batch_size': 64,
+
+    'learning_rate': 0.001,  # chi dung khi huan luyen nguon --method Src
+    'weight_decay': 0,
+    'momentum': 0.9,
+    'img_size': 224,
+
+    # dataset/WaterBirds/ : file *.h5py (tao boi src/methods/deyo/pretrain_waterbirds.py) HOAC
+    # thu muc chua metadata.csv + anh -- xem src/data_loader/WATERBIRDSDataset.py
+    'file_path': './dataset/WaterBirds',
+    'classes': ['landbird', 'waterbird'],
+    'num_class': 2,
+    'severity': None,
+    # Chi co 3 split theo metadata.csv. Nguon = train (tuong quan gia nen-nhan 95%),
+    # dich = test (tuong quan bi dao/can bang). CHI Fully TTA (khong co continuous/mixed).
+    'domains': ["train", "val", "test"],
+    'src_domains': ["train"],
+    'tgt_domains': ["test"],
+}
+
 CONT_SEQUENCE_PACS = {
     0 :  ["art_painting", "cartoon", "sketch"], # original
     2 :  ["art_painting", "sketch", "cartoon"],

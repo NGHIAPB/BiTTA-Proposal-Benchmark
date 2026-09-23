@@ -70,6 +70,8 @@ def main():
         opt = conf.PACSOpt
     elif 'colored-mnist' in conf.args.dataset:
         opt = conf.COLORED_MNIST
+    elif 'waterbirds' in conf.args.dataset:
+        opt = conf.WATERBIRDSOpt
     else:
         raise NotImplementedError(conf.args.dataset)
 
@@ -128,9 +130,10 @@ def main():
     #   Fully TTA : --tgt <corruption|domain>            (moi corruption/domain 1 lan chay rieng tu mo hinh nguon)
     #   Continuous: --tgt cont                           (chuoi corruption/domain noi tiep, KHONG reset)
     #   Mixed     : --tgt cont --random_setting          (tron ngau nhien; loader chi ho tro pacs, cifar10)
-    if conf.args.dataset in ("imagenetR", "colored-mnist") and (conf.args.tgt == "cont" or conf.args.random_setting):
+    if conf.args.dataset in ("imagenetR", "colored-mnist", "waterbirds") and (conf.args.tgt == "cont" or conf.args.random_setting):
+        _tgt1 = {"imagenetR": "corrupt", "colored-mnist": "test", "waterbirds": "test"}[conf.args.dataset]
         raise ValueError("%s chi co 1 domain dich -> khong co setting continuous/mixed shift; chi chay Fully TTA "
-                         "(--tgt %s)." % (conf.args.dataset, "corrupt" if conf.args.dataset == "imagenetR" else "test"))
+                         "(--tgt %s)." % (conf.args.dataset, _tgt1))
     if conf.args.random_setting and conf.args.dataset not in ("pacs", "cifar10"):
         raise ValueError("Mixed shift (--random_setting) chi duoc data_loader ho tro cho pacs va cifar10.")
 
@@ -287,6 +290,11 @@ def main():
                 learner.save_checkpoint(epoch=0, epoch_acc=-1, best_acc=best_acc,
                                         checkpoint_path=checkpoint_path + 'cp_last.pth.tar')
             learner.dump_eval_online_result()
+
+            if conf.args.dataset == "waterbirds":
+                # Do chinh xac theo 4 nhom (LL/LS/SL/SS) + trung binh nhom + nhom te nhat, giong DeYO.
+                from data_loader.WATERBIRDSDataset import dump_group_metrics
+                dump_group_metrics(learner, log_path)
 
             if conf.args.wandb:
                 import wandb

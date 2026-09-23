@@ -10,17 +10,19 @@ Chưa có checkpoint trong các thư mục con (chỉ là scaffold, mỗi thư m
 | `tiny-imagenet/` | tương tự cifar10 | `resnet18_pretrained` (khởi tạo ImageNet, fine-tune trên nguồn) | |
 | `pacs/` | `cp_last.pth.tar` (chỉ 1 file, dùng chung mọi seed) | `resnet18_pretrained` | |
 | `colored-mnist/` | `cp_last_0.pth.tar`, `cp_last_1.pth.tar`, `cp_last_2.pth.tar` | `resnet18_pretrained` | tự huấn luyện, xem `dataset/ColoredMNIST/README.md` |
+| `waterbirds/` | `cp_last.pth.tar` (chỉ 1 file, dùng chung mọi seed) | `resnet18_pretrained` | tự huấn luyện, xem `dataset/WaterBirds/README.md` |
 | (ImageNet-R) | **không cần file** | `resnet18_pretrained` (torchvision tự tải, lọc 1000→200 logit) | |
 
 ## Cách tạo checkpoint
 
-Dùng chính `src/main.py` với `--method Src` (huấn luyện offline trên miền nguồn sạch, không TTA):
+Dùng chính `src/main.py` với `--method Src` (huấn luyện offline trên miền nguồn sạch, không TTA). **Chạy từ thư mục
+gốc project** (không `cd src`) — `conf.py` dùng đường dẫn tương đối (`./dataset/...`) tính theo thư mục làm việc hiện
+tại, giống hệt cách `scripts/run_bitta_family.sh` gọi `python src/main.py`:
 
 ```bash
-cd src
-python main.py --gpu_idx 0 --dataset cifar10 --method Src --src original --tgt gaussian_noise-5 \
+python src/main.py --gpu_idx 0 --dataset cifar10 --method Src --src original --tgt gaussian_noise-5 \
     --model resnet18 --epoch 200 --seed 0 \
-    --log_name ../log/ --log_prefix pretrain_seed0
+    --log_name log/ --log_prefix pretrain_seed0
 ```
 
 Checkpoint được ghi **không** trực tiếp vào `pretrained_weights/`, mà theo quy ước đường dẫn của `src/main.py`
@@ -46,6 +48,7 @@ Lặp lại cho từng `--seed` (0/1/2). Tham số `--src`, `--tgt`, `--model` t
 | Tiny-ImageNet-C | `tiny-imagenet` | `original` | `gaussian_noise-5` | `resnet18_pretrained` |
 | PACS | `pacs` | `photo` | `sketch` | `resnet18_pretrained` |
 | ColoredMNIST | `colored-mnist` | `all_train` | `test` | `resnet18_pretrained` |
+| WaterBirds | `waterbirds` | `train` | `test` | `resnet18_pretrained` |
 
 Lưu ý:
 - **Không truyền `--lr`** khi huấn luyện nguồn: `main.py` chia `lr` cho 64 khi `--memory_size 1` (mặc định); dùng `lr`

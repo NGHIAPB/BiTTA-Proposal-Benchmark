@@ -1,0 +1,13 @@
+dataset: waterbirds           # gia tri --dataset cua src/main.py (BiTTA-family); DeYO: --dset WaterBirds-scenario; MEMO: waterbirds
+num_class: 2                  # landbird / waterbird
+img_size: 224
+seeds: [0, 1, 2]
+setting: fully                # 1 domain dich ("test") -> CHI Fully TTA, voi CA 7 phuong phap
+tgt: test
+src_domain: train
+data_path: ../dataset/WaterBirds   # waterbird_complete95_forest2water2/metadata.csv + anh (hoac file *.h5py)
+checkpoint_path: ../pretrained_weights/waterbirds/cp_last.pth.tar   # 1 checkpoint dung chung (tu huan luyen nguon --method Src --src train)
+metrics: [accuracy, LL, LS, SL, SS, avg_group, worst_group]         # nhom = 2*y + nen (0 land / 1 water)
+notes: >
+  Loader: src/data_loader/WATERBIRDSDataset.py. Tuong quan gia nen-nhan: train 95%, test bi can bang/dao -> bao cao do chinh
+  xac theo nhom (nhu DeYO). Cau hinh BiTTA/EATA muon tu Tiny-ImageNet-C (cung 224px) -- chua tinh chinh.

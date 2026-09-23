@@ -4,19 +4,20 @@
 # Cach dung: bash run_bitta_family.sh <method> <dataset> <setting> <seed> [log_prefix]
 #   method : tent | eata | sar | bitta_baseline | bitta_proposal
 #            (tent/eata/sar LUON chay o che do co binary feedback: --enable_bitta, "TENT*/EATA*/SAR*" cua paper)
-#   dataset: cifar10_c | cifar100_c | tiny_imagenet_c | pacs | imagenet_r | colored_mnist
+#   dataset: cifar10_c | cifar100_c | tiny_imagenet_c | pacs | imagenet_r | colored_mnist | waterbirds
 #   setting: continuous | mixed | fully
 #
 # Ma tran hop le (script tu choi to hop khac):
 #   continuous : cifar10_c cifar100_c tiny_imagenet_c pacs
 #   mixed      : cifar10_c pacs                       (data_loader chi ho tro danh sach nhieu domain cho 2 dataset nay)
-#   fully      : cifar10_c cifar100_c tiny_imagenet_c pacs imagenet_r colored_mnist
+#   fully      : cifar10_c cifar100_c tiny_imagenet_c pacs imagenet_r colored_mnist waterbirds
 #
 # Setting duoc cai dat nhu sau:
 #   continuous: 1 tien trinh, --tgt cont (15 corruption / 3 domain PACS noi tiep, KHONG reset mo hinh)
 #   mixed     : 1 tien trinh, --tgt cont --random_setting (cac corruption/domain tron ngau nhien trong 1 luong)
 #   fully     : moi corruption/domain la 1 tien trinh RIENG, khoi dong tu mo hinh nguon (--tgt <unit>);
-#               imagenet_r (--tgt corrupt) va colored_mnist (--tgt test) chi co 1 domain dich.
+#               imagenet_r (--tgt corrupt), colored_mnist (--tgt test) va waterbirds (--tgt test)
+#               chi co 1 domain dich.
 #
 # Bien moi truong tuy chon:
 #   NSAMPLE=<n>      gioi han so anh dich moi corruption/domain (imagenet_r mac dinh 10000: main.py giu TOAN BO tensor
@@ -84,6 +85,14 @@ case $DATASET in
     EPOCH=3; LR=0.0001; DROPOUT=0.3; NDROP=4; RST=0.0
     EATA_LR=0.005; EATA_EM=0.27726; EATA_DM=0.4; EATA_FA=1
     CKPT_ARG=(--load_checkpoint_path pretrained_weights/colored-mnist/cp_last_${SEED}.pth.tar) ;;
+  waterbirds)
+    # 2 lop (landbird/waterbird), anh 224x224, tuong quan gia nen-nhan. Cau hinh BiTTA/EATA muon cua
+    # Tiny-ImageNet-C (cung 224px, cung backbone); EATA: e_margin = 0.4*ln(2). Checkpoint: huan luyen nguon
+    # bang --method Src --src train (xem pretrained_weights/README.md). CHI Fully TTA (1 domain dich: test).
+    DS=waterbirds; MODEL=resnet18_pretrained; UNITS=(test); MIXED_OK=0
+    EPOCH=5; LR=0.00005; DROPOUT=0.1; NDROP=2; RST=0.01
+    EATA_LR=0.005; EATA_EM=0.27726; EATA_DM=0.4; EATA_FA=1
+    CKPT_ARG=(--load_checkpoint_path pretrained_weights/waterbirds/cp_last.pth.tar) ;;
   *)
     echo "Dataset khong hop le: $DATASET"; exit 1 ;;
 esac

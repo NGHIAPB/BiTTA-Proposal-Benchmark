@@ -4,7 +4,7 @@
 #   src/main.py --tgt cont            (scripts/run_bitta_family.sh <method> <dataset> continuous <seed>)
 setting: continuous
 datasets: [cifar10_c, cifar100_c, tiny_imagenet_c, pacs]
-methods: [tent, eata, sar, bitta_baseline, bitta_proposal]   # tent/eata/sar chay o che do co binary feedback
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal, deyo]   # tent/eata/sar co binary feedback; deyo: runner rieng (run_deyo_family.sh)
 description: >
   15 corruption (CIFAR-C/Tiny-ImageNet-C) hoac 3 domain PACS (art_painting -> cartoon -> sketch) duoc duyet qua LAN LUOT
   theo mot thu tu co dinh, khong reset. 3 seed (PACS: 5 seed). Khong ap dung cho imagenet_r / colored_mnist (1 domain dich).

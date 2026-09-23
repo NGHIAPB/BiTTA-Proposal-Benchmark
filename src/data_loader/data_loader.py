@@ -11,6 +11,7 @@ from .CIFAR100Dataset import CIFAR100Dataset
 from .PACSDataset import PacsDataset
 from .IMAGENETRDataset import ImageNetRDataset
 from .COLOREDMNISTDataset import ColoredMNISTDataset
+from .WATERBIRDSDataset import WaterbirdsDataset
 
 import os
 import pickle
@@ -287,8 +288,21 @@ def domain_data_loader(dataset, domains, file_path, batch_size, train_max_rows=n
 
         train_data = loaded_data
         entire_datasets.append(train_data)
-        
-        
+
+    elif dataset in ['waterbirds']:
+
+        cond = processed_domains
+        transform = 'src' if is_src else 'val'
+        # Khong cache doi tuong dataset: no giu handle h5py (khong pickle duoc) va doc du lieu lazy.
+        max_samples = None
+        if not is_src and conf.args.nsample < 10 ** 7:
+            max_samples = int(conf.args.nsample)
+        loaded_data = WaterbirdsDataset(file=file_path, domains=cond, max_source=num_source, transform=transform,
+                                        max_samples=max_samples)
+
+        train_data = loaded_data
+        entire_datasets.append(train_data)
+
     else:
         raise NotImplementedError
 

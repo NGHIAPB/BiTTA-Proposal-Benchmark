@@ -8,3 +8,7 @@ Pillow
 matplotlib     # COLOREDMNISTDataset.py import pyplot o dau file
 # Tuy chon: --wandb <project> (log len Weights & Biases)
 # wandb
+timm           # DeYO (import timm)
+pycm           # DeYO (from pycm import *)
+einops         # DeYO
+h5py           # DeYO/WaterBirds (file *.h5py)

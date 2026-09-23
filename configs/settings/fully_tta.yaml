@@ -2,10 +2,10 @@
 # giua cac corruption); chi thich ung luc kiem thu.
 #
 #   src/main.py --tgt <unit>          (scripts/run_bitta_family.sh <method> <dataset> fully <seed>: tu lap qua cac unit)
-#   unit = <corruption>-5 (CIFAR-C, Tiny-ImageNet-C) | art_painting/cartoon/sketch (PACS) | corrupt (ImageNet-R) | test (ColoredMNIST)
+#   unit = <corruption>-5 (CIFAR-C, Tiny-ImageNet-C) | art_painting/cartoon/sketch (PACS) | corrupt (ImageNet-R) | test (ColoredMNIST | test (ColoredMNIST, WaterBirds)
 setting: fully_tta
-datasets: [cifar10_c, cifar100_c, tiny_imagenet_c, pacs, imagenet_r, colored_mnist]
-methods: [tent, eata, sar, bitta_baseline, bitta_proposal]
+datasets: [cifar10_c, cifar100_c, tiny_imagenet_c, pacs, imagenet_r, colored_mnist, waterbirds]
+methods: [tent, eata, sar, bitta_baseline, bitta_proposal, deyo, memo]
 description: >
   ImageNet-R va ColoredMNIST chi co 1 domain dich nen chi chay duoc setting nay (khop Table 7 cua paper BiTTA, moi
   dataset 1 con so). ImageNet-R gioi han --nsample 10000 (RAM); ColoredMNIST can checkpoint tu huan luyen nguon.

@@ -1,0 +1,12 @@
+# MEMO (Zhang et al., NeurIPS 2022) -- tren MOI anh test: 32 augmix, cuc tieu entropy cua phan phoi trung binh,
+# 1 buoc SGD, du doan, roi NAP LAI checkpoint goc (episodic). Runner rieng: scripts/run_memo_family.sh.
+method: MEMO
+binary_feedback: false
+settings: [fully]             # CHI Fully TTA -- episodic nen khong co Continuous/Mixed shift
+model: resnet18               # CIFAR-10/100: ResNet-18 kieu CIFAR (conv1 3x3); con lai torchvision ResNet-18
+batch_size: 1                 # tung anh (32 augmix/anh)
+lr: {cifar10: 0.005, cifar100: 0.005, tiny_imagenet: 0.00025, pacs: 0.00025, imagenet_r: 0.00025, colored_mnist: 0.005, waterbirds: 0.00025}
+notes: >
+  Chay rat cham (32 augmix + 1 backward/anh): dat NSAMPLE cho dataset lon (tiny-imagenet, imagenet_r, waterbirds).
+  ImageNet-R: khong can checkpoint (--checkpoint imagenet_r = torchvision pretrained loc 1000->200 logit).
+  WaterBirds: bao cao them 4 nhom LL/LS/SL/SS + trung binh nhom + nhom te nhat.
