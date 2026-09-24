@@ -10,6 +10,8 @@
 #   level:      muc do severity 1-5, chi dung cho cifar10/cifar100/tiny-imagenet (mac dinh 5)
 #
 # Bien moi truong tuy chon:
+#   SHARDS=<k>    chay k tien trinh song song tren 1 GPU roi gop (ket qua tuong duong, nhanh ~k lan neu con CPU/GPU roi).
+#   PROFILE=<n>   do thoi gian n anh dau (augmix CPU / fwd-bwd GPU) roi thoat, khong ghi ket qua.
 #   NSAMPLE=<n>   chi danh gia n anh NGAU NHIEN (theo seed); MEMO adapt tung anh (32 augmix/anh) nen
 #                 dataset nhieu anh (tiny-imagenet, imagenet_r) rat lau -- nen dat vd NSAMPLE=2000-5000.
 # Vi du:        bash run_memo_family.sh memo cifar10 gaussian_noise 0 5
@@ -47,10 +49,30 @@ if [ -n "${NSAMPLE:-}" ]; then NS_ARG=(--nsample "$NSAMPLE"); fi
 
 cd "$(dirname "$0")/../src/methods/memo"
 
-python main.py \
-    --method "$METHOD" --dataset "$DATASET" --corruption "$CORRUPTION" --level "$LEVEL" \
-    --seed "$SEED" --lr "$LR" \
-    --checkpoint "$CKPT_ARG" \
-    --data_root ../../../dataset --domainbed_root ../../../domainbed_dataset \
-    "${NS_ARG[@]}" \
-    --output "../../../log/memo_${METHOD}_${DATASET}_s${SEED}"
+ARGS=(--method "$METHOD" --dataset "$DATASET" --corruption "$CORRUPTION" --level "$LEVEL"
+      --seed "$SEED" --lr "$LR" --checkpoint "$CKPT_ARG"
+      --data_root ../../../dataset --domainbed_root ../../../domainbed_dataset
+      "${NS_ARG[@]}" --output "../../../log/memo_${METHOD}_${DATASET}_s${SEED}")
+
+# PROFILE=<n>: chi do thoi gian n anh dau (augmix CPU / fwd-bwd GPU) roi thoat, KHONG ghi ket qua.
+if [ -n "${PROFILE:-}" ]; then
+  python main.py "${ARGS[@]}" --profile "$PROFILE"
+  exit 0
+fi
+
+# SHARDS=<k>: chia tap anh cua (dataset, corruption, seed) thanh k phan chay SONG SONG tren cung GPU roi gop lai.
+# MEMO xu ly tung anh doc lap (nap lai checkpoint truoc moi anh) nen ket qua gop tuong duong chay 1 mach.
+SHARDS=${SHARDS:-1}
+if [ "$SHARDS" -gt 1 ]; then
+  T=$(( $(nproc) / SHARDS )); [ "$T" -lt 1 ] && T=1
+  export OMP_NUM_THREADS=$T MKL_NUM_THREADS=$T
+  pids=()
+  for ((i=0; i<SHARDS; i++)); do
+    python main.py "${ARGS[@]}" --num_shards "$SHARDS" --shard_id "$i" &
+    pids+=($!)
+  done
+  for p in "${pids[@]}"; do wait "$p"; done
+  python main.py "${ARGS[@]}" --merge_shards "$SHARDS"
+else
+  python main.py "${ARGS[@]}"
+fi

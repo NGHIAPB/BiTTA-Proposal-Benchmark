@@ -215,7 +215,9 @@ tiết. Coi kết quả là **xu hướng**, không phải tái lập số tuy�
   checkpoint và lớp chuẩn hoá với nhóm BiTTA. Siêu tham số DeYO theo paper/repo gốc, **chưa tinh chỉnh** cho các dataset ngoài
   ImageNet-C/Waterbirds/ColoredMNIST (paper DeYO không báo cáo). WaterBirds dùng `lr_mul 5` như DeYO gốc; ResNet-18 chưa được
   paper DeYO kiểm chứng (paper dùng ResNet-50).
-- **MEMO**: 32 augmix/ảnh + 1 bước SGD rồi nạp lại checkpoint → rất chậm; đặt `NSAMPLE` cho dataset lớn. CIFAR dùng
+- **MEMO**: 32 augmix/ảnh + 1 bước SGD rồi nạp lại checkpoint → rất chậm. Tăng tốc mà giữ đúng thuật toán: `PROFILE=<n>`
+  đo thời gian (augmix CPU / forward-backward GPU), `SHARDS=<k>` chia ảnh thành k phần chạy song song trên 1 GPU rồi gộp
+  (mỗi ảnh độc lập nên kết quả tương đương); `NSAMPLE` chỉ dùng khi bắt buộc (đổi giao thức, phải ghi rõ). CIFAR dùng
   ResNet-18 kiểu CIFAR (conv1 3×3), đúng kiến trúc checkpoint.
 - **WaterBirds** (Fully TTA, 7 phương pháp): chỉ số chính = trung bình 4 nhóm (`avg_group`) và nhóm tệ nhất (`worst_group`);
   nhóm BiTTA ghi `waterbirds_groups.json` cạnh `online_eval.json`. Cấu hình BiTTA/EATA mượn Tiny-ImageNet-C (chưa tinh chỉnh).
