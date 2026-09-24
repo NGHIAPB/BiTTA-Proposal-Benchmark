@@ -11,6 +11,7 @@
 #
 # Bien moi truong tuy chon:
 #   SHARDS=<k>    chay k tien trinh song song tren 1 GPU roi gop (ket qua tuong duong, nhanh ~k lan neu con CPU/GPU roi).
+#   NGPU=<n>      so GPU de chia shard luan phien (mac dinh: tu nhan bang nvidia-smi -L).
 #   PROFILE=<n>   do thoi gian n anh dau (augmix CPU / fwd-bwd GPU) roi thoat, khong ghi ket qua.
 #   NSAMPLE=<n>   chi danh gia n anh NGAU NHIEN (theo seed); MEMO adapt tung anh (32 augmix/anh) nen
 #                 dataset nhieu anh (tiny-imagenet, imagenet_r) rat lau -- nen dat vd NSAMPLE=2000-5000.
@@ -66,9 +67,13 @@ SHARDS=${SHARDS:-1}
 if [ "$SHARDS" -gt 1 ]; then
   T=$(( $(nproc) / SHARDS )); [ "$T" -lt 1 ] && T=1
   export OMP_NUM_THREADS=$T MKL_NUM_THREADS=$T
+  # Chia shard luan phien qua cac GPU co san (NGPU=<n> de ghi de; khong co GPU/nvidia-smi -> 1)
+  NGPU=${NGPU:-$(nvidia-smi -L 2>/dev/null | grep -c '^GPU' || true)}
+  [ -z "$NGPU" ] || [ "$NGPU" -lt 1 ] && NGPU=1
+  echo "MEMO: $SHARDS shard tren $NGPU GPU, $T luong CPU/shard"
   pids=()
   for ((i=0; i<SHARDS; i++)); do
-    python main.py "${ARGS[@]}" --num_shards "$SHARDS" --shard_id "$i" &
+    python main.py "${ARGS[@]}" --num_shards "$SHARDS" --shard_id "$i" --gpu_idx $((i % NGPU)) &
     pids+=($!)
   done
   for p in "${pids[@]}"; do wait "$p"; done
