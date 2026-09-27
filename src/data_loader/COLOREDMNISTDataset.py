@@ -66,14 +66,23 @@ class ColoredMNISTDataset(datasets.VisionDataset):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
+        # SUA: file .pt tu sinh (prepare_colored_mnist) luu tuple 4 phan tu (anh, nhan, mau, nhan_goc);
+        # 1 so nguon .pt ngoai (vd tap Kaggle da chuan bi san) chi luu (anh, nhan) hoac (anh, nhan, mau).
+        # Tu nhan dang do dai tuple thay vi gia dinh co dinh 4, tranh IndexError. Voi split "test",
+        # prepare_colored_mnist luu nhan_goc == nhan (khong nhieu) nen fallback 2-tuple van dung nhan can dung.
         data = self.data_label_tuples[index]
-        if self.flip:
-            img, target, color_red = data[0], data[1], data[2]
+        img = data[0]
+        if len(data) >= 4:
+            target, color_red = (data[1], data[2]) if self.flip else (data[3], data[2])
+        elif len(data) == 3:
+            target, color_red = data[1], data[2]
+        elif len(data) == 2:
+            target, color_red = data[1], 0
         else:
-            img, target, color_red = data[0], data[3], data[2]
+            raise ValueError(f'Dinh dang ColoredMNIST khong nhan dang duoc: tuple do dai {len(data)}')
 
         if self.transform is not None:
-            img = self.transform(data[0])
+            img = self.transform(img)
 
         if self.target_transform is not None:
             target = self.target_transform(data[1])
