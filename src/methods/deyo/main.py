@@ -146,6 +146,14 @@ def validate(val_loader, model, criterion, args, mode='eval'):
             '''
             
     if biased:
+        # SUA: LL/LS/SL/SS truoc day chi duoc gan trong khoi 'if (i+1) % wandb_interval == 0:',
+        # nen bi NameError khi tong so batch < wandb_interval (vd WaterBirds test ~91 batch < 100 mac dinh).
+        # Tinh lai TU correct_count/total_count da cong don toan bo vong lap, dung bang gia tri cuoi cung
+        # ma nhanh wandb_interval le ra phai cho ra (khong doi thuat toan, chi dam bao luon co gia tri).
+        LL = correct_count[0] / total_count[0] * 100
+        LS = correct_count[1] / total_count[1] * 100
+        SL = correct_count[2] / total_count[2] * 100
+        SS = correct_count[3] / total_count[3] * 100
         logger.info(f"- Detailed result under {args.corruption}. LL: {LL:.5f}, LS: {LS:.5f}, SL: {SL:.5f}, SS: {SS:.5f}")
         if args.wandb_log:
             wandb.log({'final_avg/LL': LL,
@@ -612,6 +620,14 @@ if __name__ == '__main__':
             acc5 = top5.avg
             
             if biased:
+                # SUA: LL/LS/SL/SS truoc day chi duoc gan trong khoi 'if (i+1) % wandb_interval == 0:',
+                # nen bi NameError khi tong so batch < wandb_interval (vd WaterBirds test ~91 batch < 100 mac dinh).
+                # Tinh lai TU correct_count/total_count da cong don toan bo vong lap, dung bang gia tri cuoi cung
+                # ma nhanh wandb_interval le ra phai cho ra (khong doi thuat toan, chi dam bao luon co gia tri).
+                LL = correct_count[0] / total_count[0] * 100
+                LS = correct_count[1] / total_count[1] * 100
+                SL = correct_count[2] / total_count[2] * 100
+                SS = correct_count[3] / total_count[3] * 100
                 logger.info(f"- Detailed result under {args.corruption}. LL: {LL:.5f}, LS: {LS:.5f}, SL: {SL:.5f}, SS: {SS:.5f}")
                 if args.wandb_log:
                     wandb.log({'final_avg/LL': LL,
@@ -763,6 +779,14 @@ if __name__ == '__main__':
             acc5 = top5.avg
             
             if biased:
+                # SUA: LL/LS/SL/SS truoc day chi duoc gan trong khoi 'if (i+1) % wandb_interval == 0:',
+                # nen bi NameError khi tong so batch < wandb_interval (vd WaterBirds test ~91 batch < 100 mac dinh).
+                # Tinh lai TU correct_count/total_count da cong don toan bo vong lap, dung bang gia tri cuoi cung
+                # ma nhanh wandb_interval le ra phai cho ra (khong doi thuat toan, chi dam bao luon co gia tri).
+                LL = correct_count[0] / total_count[0] * 100
+                LS = correct_count[1] / total_count[1] * 100
+                SL = correct_count[2] / total_count[2] * 100
+                SS = correct_count[3] / total_count[3] * 100
                 logger.info(f"- Detailed result under {args.corruption}. LL: {LL:.5f}, LS: {LS:.5f}, SL: {SL:.5f}, SS: {SS:.5f}")
                 if args.wandb_log:
                     wandb.log({'final_avg/LL': LL,
