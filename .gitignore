@@ -6,6 +6,7 @@ dataset/**/*
 domainbed_dataset/**/*
 !domainbed_dataset/**/README.md
 __pycache__/
+docs/
 *.pyc
 raw_logs/
 *.tar.gz
@@ -15,3 +16,13 @@ raw_logs/
 *.pptx
 *.csv
 *.xlsx
+
+# verify/: du lieu sach tai ve (cache) va ket qua sinh ra (lap lai duoc tu script, khong luu vao repo)
+verify/.cache/
+verify/results/*.png
+!verify/results/.gitkeep
+# verify/: du lieu/tai lieu rieng cua nguoi dung giai nen/luu truc tiep trong thu muc nay, khong phai code
+verify/archive/
+verify/archive.zip
+verify/*.docx
+verify/~$*
