@@ -27,7 +27,6 @@ class PacsDataset(torch.utils.data.Dataset):
         self.file_path = opt['file_path']
 
         assert (len(domains) > 0)
-        # assert (domains[0] in opt['domains'] + ['test'])
         assert (set(domains).issubset(set(opt['domains'] + ['test'])))
         
         if domains[0] == "test":
@@ -77,7 +76,6 @@ class PacsDataset(torch.utils.data.Dataset):
 
     def get_datasets_per_domain(self):
         raise NotImplementedError
-        # return self.dataset
 
     def __getitem__(self, idx):
         if isinstance(idx, torch.Tensor):

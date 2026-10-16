@@ -18,10 +18,6 @@ class NormalizeLayer(torch.nn.Module):
       """
 
     def __init__(self, means, sds):
-        """
-        :param means: the channel means
-        :param sds: the channel standard deviations
-        """
         super(NormalizeLayer, self).__init__()
         self.register_buffer(
             'mu', torch.tensor(means).view(-1, 1, 1))
@@ -38,25 +34,9 @@ class IdentityLayer(torch.nn.Module):
 
     def forward(self, input: torch.tensor):
         return input
-    
-    
-# def get_normalize_layer(dataset):
-#     """Return the dataset's normalization layer"""
-#     if dataset in ['tiny-imagenet']:
-#         return NormalizeLayer(TINY_IMAGENET_MEAN, TINY_IMAGENET_STDDEV)
-#     else: # pacs and vlcs
-#         return IdentityLayer()
 
-
-# def get_normalize_std(dataset):
-#     """Return the dataset's normalization layer"""
-#     if dataset in ['tiny-imagenet']:
-#         return TINY_IMAGENET_MEAN, TINY_IMAGENET_STDDEV
-#     else: # pacs and vlcs
-#         return None
 
 def get_normalize_layer(dataset):
-    """Return the dataset's normalization layer"""
     if dataset in ["cifar10", "cifar10outdist"]:
         return NormalizeLayer(_CIFAR10_MEAN, _CIFAR10_STDDEV)
     elif dataset in ["cifar100", "cifar100outdist"]:
@@ -68,7 +48,6 @@ def get_normalize_layer(dataset):
 
 
 def get_normalize_std(dataset):
-    """Return the dataset's normalization layer"""
     if dataset in ["cifar10", "cifar10outdist"]:
         return _CIFAR10_STDDEV
     elif dataset in ["cifar100", "cifar100outdist"]:

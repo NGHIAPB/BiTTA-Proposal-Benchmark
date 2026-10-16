@@ -1,14 +1,17 @@
+# Phien ban la can duoi toi thieu (khong pin cung), vi cac run thuc te
+# (293 lan chay cho khoa luan) duoc thuc hien tren Kaggle, khong phai may
+# local nay -- xem README muc "Moi truong" de biet ly do.
 torch>=2.0.0
 torchvision>=0.15.0
-numpy
-pandas
-scikit-learn
-tqdm
-Pillow
-matplotlib     # COLOREDMNISTDataset.py import pyplot o dau file
+numpy>=1.23
+pandas>=1.5
+scikit-learn>=1.1   # dung cho hieu chuan Platt scaling (sklearn.linear_model)
+tqdm>=4.64
+Pillow>=9.0
+matplotlib>=3.5     # COLOREDMNISTDataset.py import pyplot o dau file
 # Tuy chon: --wandb <project> (log len Weights & Biases)
 # wandb
-timm           # DeYO (import timm)
-pycm           # DeYO (from pycm import *)
-einops         # DeYO
-h5py           # DeYO/WaterBirds (file *.h5py)
+timm>=0.9           # DeYO (import timm)
+pycm>=3.5           # DeYO (from pycm import *)
+einops>=0.6          # DeYO
+h5py>=3.7           # DeYO/WaterBirds (file *.h5py)

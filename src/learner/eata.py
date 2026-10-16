@@ -29,10 +29,6 @@ from utils import memory
 class ETA(DNN):
     # EATA without anti-forgetting
     def __init__(self, model_, corruption_list_):
-        # self.steps = 1 # SoTTA: replaced to epoch
-        # assert self.steps > 0, "EATA requires >= 1 step(s) to forward and update"
-        # self.episodic = False  # SoTTA: we don't use episodic
-
         self.num_samples_update_1 = 0  # number of samples after First filtering, exclude unreliable samples
         self.num_samples_update_2 = 0  # number of samples after Second filtering, exclude both unreliable and redundant samples
         self.e_margin = conf.args.e_margin  # hyper-parameter E_0 (Eqn. 3)
@@ -64,9 +60,7 @@ class ETA(DNN):
         3. the number of reliable samples;
         4. the moving average  probability vector over all previous samples
         """
-        # forward
         outputs = model(x)
-        # adapt
         entropys = softmax_entropy(outputs)
         # filter unreliable samples
         filter_ids_1 = torch.where(entropys < e_margin)
@@ -84,14 +78,8 @@ class ETA(DNN):
         else:
             updated_probs = update_model_probs(current_model_probs, outputs[filter_ids_1].softmax(1))
         coeff = 1 / (torch.exp(entropys.clone().detach() - e_margin))
-        # implementation version 1, compute loss, all samples backward (some unselected are masked)
         entropys = entropys.mul(coeff)  # reweight entropy losses for diff. samples
         loss = entropys.mean(0)
-        """
-        # implementation version 2, compute loss, forward all batch, forward and backward selected samples again.
-        # if x[ids1][ids2].size(0) != 0:
-        #     loss = softmax_entropy(model(x[ids1][ids2])).mul(coeff).mean(0) # reweight entropy losses for diff. samples
-        """
         if fishers is not None:
             ewc_loss = 0
             for name, param in model.named_parameters():
@@ -106,7 +94,6 @@ class ETA(DNN):
         if x[ids1][ids2].size(0) != 0:
             loss.backward()
             optimizer.step()
-        # optimizer.zero_grad()
         return outputs, entropys.size(0), filter_ids_1[0].size(0), updated_probs, loss
 
     def test_time_adaptation(self):
@@ -182,8 +169,6 @@ class EATA(ETA):
         for iter_, (images, targets, domains) in enumerate(fisher_loader, start=1):
             if conf.args.gpu_idx is not None:
                 images = images.cuda(conf.args.gpu_idx, non_blocking=True)
-            # if torch.cuda.is_available():
-            #     targets = targets.cuda(conf.args.gpu_idx, non_blocking=True)
             outputs = subnet(images)
             _, targets = outputs.max(1)
             loss = train_loss_fn(outputs, targets)
@@ -198,15 +183,12 @@ class EATA(ETA):
                         fisher = fisher / iter_
                     fishers.update({name: [fisher, param.data.clone().detach()]})
             ewc_optimizer.zero_grad()
-        # logger.info("compute fisher matrices finished")
         del ewc_optimizer
         self.fishers = fishers  # fisher regularizer items for anti-forgetting, need to be calculated pre model adaptation (Eqn. 9)
 
 
 def collect_params(model):
     """Collect the affine scale + shift parameters from batch norms.
-    Walk the model's modules and collect all batch normalization parameters.
-    Return the parameters and their names.
     Note: other choices of parameterization are possible!
     """
     params = []
@@ -221,7 +203,6 @@ def collect_params(model):
 
 
 def configure_model(model):
-    """Configure model for use with eata."""
     # train mode, because eata optimizes the model to minimize entropy
     model.train()
     # disable grad, to (re-)enable only what eata updates
@@ -243,7 +224,6 @@ def configure_model(model):
 
 @torch.jit.script
 def softmax_entropy(x: torch.Tensor) -> torch.Tensor:
-    """Entropy of softmax distribution from logits."""
     temprature = 1
     x = x / temprature
     x = -(x.softmax(1) * x.log_softmax(1)).sum(1)
@@ -267,7 +247,6 @@ def update_model_probs(current_model_probs, new_probs):
 
 
 def check_model(model):
-    """Check model for compatability with eata."""
     is_training = model.training
     assert is_training, "eata needs train mode: call model.train()"
     param_grads = [p.requires_grad for p in model.parameters()]

@@ -5,7 +5,7 @@ CIFAR10Opt = {
     'name': 'cifar10',
     'batch_size': 64, # 128
 
-    'learning_rate': 0.1,  # initial learning rate
+    'learning_rate': 0.1,
     'weight_decay': 0.0005,
     'momentum': 0.9,
     'img_size': 32,
@@ -78,7 +78,7 @@ CIFAR100Opt = {
     'name': 'cifar100',
     'batch_size': 128,
 
-    'learning_rate': 0.1,  # initial learning rate
+    'learning_rate': 0.1,
     'weight_decay': 0.0005,
     'momentum': 0.9,
     'img_size': 32,
@@ -106,9 +106,6 @@ CIFAR100Opt = {
                 'lawn-mower', 'rocket', 'streetcar', 'tank', 'tractor'],
     'num_class': 100,
     'severity': 5,
-    # 'corruptions': ["shot_noise", "motion_blur", "snow", "pixelate", "gaussian_noise", "defocus_blur",
-    #                 "brightness", "fog", "zoom_blur", "frost", "glass_blur", "impulse_noise", "contrast",
-    #                 "jpeg_compression", "elastic_transform"],
     'domains': ["original",
 
                 "test",
@@ -174,7 +171,7 @@ PACSOpt = {
     'name': 'pacs',
     'batch_size': 64,
 
-    'learning_rate': 0.001,  # initial learning rate
+    'learning_rate': 0.001,
     'weight_decay': 0,
     'momentum': 0.9,
     'img_size': 224,

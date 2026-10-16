@@ -37,12 +37,6 @@ class TENT(DNN):
             if isinstance(module, (nn.LayerNorm, nn.GroupNorm)):
                 module.requires_grad_(True)
 
-        # optimizer = torch.optim.SGD(
-        #                 self.net.parameters(),
-        #                 conf.args.opt['learning_rate'],
-        #                 momentum=conf.args.opt['momentum'],
-        #                 weight_decay=conf.args.opt['weight_decay'],
-        #                 nesterov=True)
         optimizer = optim.Adam(self.net.parameters(), lr=conf.args.opt['learning_rate'], weight_decay=0.0)
         return optimizer
 

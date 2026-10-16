@@ -25,7 +25,6 @@ def update_ema(ema, new_data):
 
 class SAR(DNN):
     def __init__(self, *args, **kwargs):
-        # SAR-specific hyperparameters
         num_class = conf.args.opt['num_class']
 
         self.margin_e0 = 0.4 * math.log(num_class)  # math.log(1000)
@@ -36,7 +35,6 @@ class SAR(DNN):
 
 
     def init_learner(self):
-        # turn on grad for BN params only
         self.net.train()
 
         for param in self.net.parameters():  # initially turn off requires_grad for all

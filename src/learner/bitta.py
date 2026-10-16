@@ -30,15 +30,12 @@ class BiTTA(DNN):
     """
 
     def __init__(self, *args, **kwargs):
-        """
-        Initialize BiTTA model. Refer `init_learner()` for actual initialization.
-        """
+        """Refer `init_learner()` for actual initialization."""
         self.atta_src_net = None
         super(BiTTA, self).__init__(*args, **kwargs)
         assert (conf.args.memory_type in ["ActivePriorityFIFO"])
 
     def reset(self):
-        """Reset the BiTTA model to its initial state."""
         super(BiTTA, self).reset()
 
     def init_learner(self):
@@ -160,7 +157,6 @@ class BiTTA(DNN):
                 # Compute BiTTA losses (BFA and ABA)
                 bfa_loss, aba_loss = self.get_loss(mcd_mean_softmax, outputs_softmax, correct_labels_, wrong_labels_, u_labels_)
 
-                # Final loss combination
                 loss = conf.args.w_final_bfa_loss * bfa_loss + conf.args.w_final_aba_loss * aba_loss
 
                 self.optimizer.zero_grad()
@@ -194,7 +190,7 @@ class BiTTA(DNN):
             u_labels_: Labels for unlabeled samples
             
         Returns:
-            tuple: (correct_loss, wrong_loss, unlabeled_loss)
+            tuple: (bfa_loss, aba_loss)
         """
         bfa_loss = torch.tensor([0.0]).to(device)
         aba_loss = torch.tensor([0.0]).to(device)
@@ -236,8 +232,6 @@ class BiTTA(DNN):
         of BatchNorm layers before performing active sample selection.
         """
         self.enable_running_stats()
-        
-        # Update BN statistics
         self.net.train()
         feats, _, _ = self.fifo.get_memory()
         feats = torch.stack(feats).to(device)

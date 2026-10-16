@@ -113,7 +113,6 @@ class ResNetDropout(torchvision.models.resnet.ResNet):
         self.filter=filter
         
     def forward(self, x: torch.Tensor, dropout=0.0, get_embedding=False, reverse_grad=False) -> torch.Tensor:
-        # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)

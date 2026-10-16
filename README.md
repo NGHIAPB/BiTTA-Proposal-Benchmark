@@ -1,12 +1,12 @@
 # TTA-Proposal-Benchmark
 
-Benchmark test-time adaptation (TTA) cho đề án tốt nghiệp "Proposal cho BiTTA": so sánh **BiTTA-Proposal (C1 + C4)**
+Benchmark test-time adaptation (TTA) cho đề án tốt nghiệp "Proposal cho BiTTA": so sánh **BiTTA-Proposal**
 với BiTTA gốc, 3 phương pháp TTA khác được chạy ở chế độ **có binary feedback**, và 2 phương pháp **không dùng feedback**
 (MEMO, DeYO), cùng một backbone **ResNet-18**.
 
 ## Kịch bản thực nghiệm
 
-**Phương pháp** (7): TENT\*, EATA\*, SAR\*, BiTTA, BiTTA-Proposal (C1 + C4), MEMO, DeYO.
+**Phương pháp** (7): TENT\*, EATA\*, SAR\*, BiTTA, BiTTA-Proposal, MEMO, DeYO.
 (\* = phiên bản có binary feedback `--enable_bitta`, tương ứng biến thể "B" trong Table 1 của paper BiTTA. MEMO và DeYO
 **không** dùng binary feedback.)
 
@@ -73,12 +73,16 @@ TTA-Proposal-Benchmark/
 │   ├── run_memo_family.sh         # MEMO (Fully): <method> <dataset> <corruption> <seed> [level]
 │   ├── run_all_bitta_family.sh    # 225 run nhóm BiTTA (có lọc SETTINGS/DATASETS, SKIP_DONE)
 │   └── run_all_other_methods.sh   # DeYO + MEMO (lọc WHICH/SETTINGS/DATASETS)
+├── tests/                          # test nhẹ, CPU-only (xem "Chạy test nhẹ" trong mục Cài đặt)
 ├── dataset/                       # (rỗng) CIFAR-10-C, CIFAR-100-C, Tiny-ImageNet-C, imagenet-r, ColoredMNIST, WaterBirds
 ├── domainbed_dataset/             # (rỗng) PACS
 ├── pretrained_weights/            # (rỗng) checkpoint theo từng dataset
 ├── log/                           # output (online_eval.json)
 ├── results/aggregate_results.py   # tổng hợp bảng so sánh theo (dataset, setting)
-└── requirements.txt
+├── LICENSE                        # MIT, cho phần code riêng của project
+├── requirements.txt
+├── requirements-dev.txt           # thêm pytest, dùng khi chạy tests/
+└── pytest.ini
 ```
 
 ## Cài đặt
@@ -88,6 +92,20 @@ pip install -r requirements.txt
 ```
 
 Yêu cầu Python ≥ 3.9, PyTorch ≥ 2.0 với build CUDA phù hợp GPU. Cần GPU: `src/main.py` gọi `.cuda()` trực tiếp.
+
+Phiên bản trong `requirements.txt` là **cận dưới tối thiểu**, không pin cứng — các lần chạy thật của đề án (293 lượt)
+thực hiện trên Kaggle, không phải trên máy phát triển local, nên không chốt chính xác một bộ phiên bản duy nhất.
+
+### Chạy test nhẹ (không cần GPU)
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+`tests/` chỉ kiểm tra các phần logic thuần Python/CPU (bộ nhớ FIFO, bộ nhớ ưu tiên `S+/S-/U` của BiTTA, công thức
+hiệu chuẩn, kiến trúc ResNet, và việc import các module lõi không bị lỗi) — **không** thay thế
+`scripts/smoke_test.sh`, vốn chạy thử toàn bộ pipeline thật (cần GPU + checkpoint + dữ liệu).
 
 ## Chuẩn bị dữ liệu và checkpoint
 
@@ -260,6 +278,9 @@ torchvision ResNet-18 + Dropout sau mỗi residual block cho MC-Dropout).
 cộng phần chọn mẫu C1 + C4 của Proposal trong `learner/dnn.py`; không chỉnh sửa logic thuật toán của các phương pháp.
 `src/methods/deyo/` là code của tác giả DeYO (giữ nguyên thuật toán, LICENSE kèm theo; các chỗ sửa/đấu nối nêu ở
 [MEMO, DeYO và WaterBirds](#memo-deyo-và-waterbirds)); `src/methods/memo/` là bản cài đặt MEMO tự chứa theo paper.
+
+Giấy phép cho phần code của riêng project này: xem [`LICENSE`](LICENSE) (MIT, khớp với giấy phép của BiTTA gốc).
+`src/methods/deyo/LICENSE` áp dụng riêng cho thư mục `src/methods/deyo/`.
 
 ## Trạng thái kiểm chứng
 

@@ -32,7 +32,6 @@ class EnergyLoss(nn.Module):
 
     def forward(self, x):
         e = calc_energy(x, self.temp_factor)
-        # energy = 1.0 / torch.linalg.vector_norm(6.0 - energy, 2)
         e = 1.0 / e.mean()
         return e
 
@@ -59,12 +58,10 @@ def marginal_entropy(outputs):
 
 
 def entropy(softmax: torch.Tensor) -> torch.Tensor:
-    """Entropy of softmax distribution from logits."""
     return -(softmax * torch.log(softmax + 1e-6)).sum(1)
 
 
 def softmax_entropy(x: torch.Tensor, temperature=1.0) -> torch.Tensor:
-    """Entropy of softmax distribution from logits."""
     softmax = x.softmax(1) / temperature
     return entropy(softmax)
 
@@ -75,19 +72,7 @@ class softmax_cross_entropy(nn.Module):
         self.loss_fn = nn.NLLLoss(reduction=reduction)
 
     def forward(self, softmax_pred, target):
-        # if target.dim() == 1:  # hard labels
-        #     num_class = softmax_pred.shape[1]
-        #     target = F.one_hot(target, num_classes=num_class)
-
-        # loss = self.loss_fn(torch.log(softmax_pred + 1e-7), target)
         loss = self.loss_fn(nn.LogSoftmax(dim=1)(softmax_pred), target)
-        # loss = - target * torch.log(softmax_pred + 1e-7)
-        # if reduction == 'none':
-        #     pass
-        # elif reduction == 'mean':
-        #     loss = torch.sum(loss) / softmax_pred.size(0)
-        # elif reduction == 'sum':
-        #     loss = torch.sum(loss, dim=1)
         return loss
 
 @torch.jit.script
@@ -103,17 +88,6 @@ def JSD(p: torch.tensor, q: torch.tensor):
     return torch.sum(0.5 * (F.kl_div(m, p.log(), reduction='none', log_target=True) +
                             F.kl_div(m, q.log(), reduction='none', log_target=True)), dim=1)
 
-# def complement_CrossEntropyLoss(x, target, conf):
-#     softmax = x.softmax(1)
-#     complement = 1 - softmax
-#     if len(target.shape) == 1:
-#         target_complement= complement[torch.arange(0, len(target)), target]
-#     else:
-#         target_complement= complement[torch.arange(0, len(target)).unsqueeze(1), target]
-
-#     loss = (-1 * conf * (target_complement + 1e-6).log()).mean()
-#     return loss 
-
 @torch.jit.script
 def complement_CrossEntropyLoss(x, target):
     softmax = x.softmax(1)
@@ -126,7 +100,6 @@ def complement_CrossEntropyLoss(x, target):
     loss = (-1  * (target_complement + 1e-6).log()).mean()
     return loss 
 
-# @torch.jit.script
 def weighted_CrossEntropyLoss(x, target, weight):
     softmax = x.softmax(1)
     return (-softmax[list(range(target.shape[0])), target.tolist()].log() * weight).sum()/weight.sum()
@@ -134,9 +107,7 @@ def weighted_CrossEntropyLoss(x, target, weight):
 
 # for Energy Based Model (EBM)
 def bound_max_loss(energy, bound):
-    """
-    return the loss value of max(0, \mathcal{F}(x) - \Delta )
-    """
+    r"""return the loss value of max(0, \mathcal{F}(x) - \Delta )"""
     energy_minus_bound = energy - bound
     energy_minus_bound = torch.unsqueeze(energy_minus_bound, dim=1)
     zeros = torch.zeros_like(energy_minus_bound)
@@ -146,10 +117,6 @@ def bound_max_loss(energy, bound):
     return selected.mean()
 
 class FreeEnergyAlignmentLoss(nn.Module):
-    """
-    free energy alignment loss
-    """
-
     def __init__(self, energy_beta, energy_align_type):
         super(FreeEnergyAlignmentLoss, self).__init__()
         assert energy_beta > 0, "beta for energy calculate must be larger than 0"
@@ -213,10 +180,6 @@ class DIVLoss(nn.Module):
 
 # MHPL # focal neighbor loss
 class CrossEntropyFeatureAugWeight(nn.Module):
-
-    """focal neighbor loss 
-    """
-
     def __init__(self, num_classes, epsilon=0.1, use_gpu=True, reduction=True):
         super(CrossEntropyFeatureAugWeight, self).__init__()
         self.num_classes = num_classes

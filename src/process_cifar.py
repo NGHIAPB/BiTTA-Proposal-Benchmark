@@ -15,8 +15,7 @@ def ensure_dir(file_path):
 
 
 def reshape(data):
-    # original data shape: (N, 3072)
-    # reshape the vector into height * weight * channel format
+    # dau vao dang vector phang (N, 3072) -> dua ve NCHW roi chuyen sang NHWC
     nchw = data.reshape((data.shape[0], 3, 32, 32))
     nhwc = np.transpose(nchw, (0, 2, 3, 1))
     return nhwc
@@ -82,8 +81,6 @@ def process_original_data(org_dir, dataset):
     os.chdir(org_dir)
 
     if dataset == "cifar-10c":
-
-        # 1. load train data
         files = ["data_batch_1", "data_batch_2", "data_batch_3", "data_batch_4", "data_batch_5"]
         data_list = []
         label_list = []
@@ -92,35 +89,29 @@ def process_original_data(org_dir, dataset):
             data_dict = load_data(filename)
             batch_data = data_dict[b'data']
             batch_label = np.asarray(data_dict[b'labels'])
-            reshaped_data = reshape(batch_data)  # reshape data
+            reshaped_data = reshape(batch_data)
 
-            # append data and label to the predefined list
             data_list.append(reshaped_data)
             label_list.append(batch_label)
 
-        # concat data and labels
         data = np.concatenate(np.asarray(data_list), axis=0)
         label = np.concatenate(np.asarray(label_list), axis=0)
 
-        # 2. load test data
         test_file = "test_batch"
         test_data_dict = load_data(test_file)
         test_data = test_data_dict[b'data']
-        test_data = reshape(test_data)  # reshape data
+        test_data = reshape(test_data)
 
     else:  # dataset == "cifar-100c"
-        # 1. load train data
         data_dict = load_data("train")
         data = data_dict[b'data']
         label = np.asarray(data_dict[b'fine_labels'])
-        data = reshape(data)  # reshape data
+        data = reshape(data)
 
-        # 2. load test data
         test_data_dict = load_data("test")
         test_data = test_data_dict[b'data']
-        test_data = reshape(test_data)  # reshape data
+        test_data = reshape(test_data)
 
-    # save train data
     org_data_dir = f'{cor_dir}/origin'
     if not os.path.exists(org_data_dir):
         os.makedirs(org_data_dir)
@@ -142,14 +133,12 @@ def process_original_data(org_dir, dataset):
 
 
 if __name__ == "__main__":
-    # get directory names to save data
     dataset = sys.argv[1]
     cor_dirname, org_dirname = get_dirnames(dataset)
 
-    # get full directories
     home_dir = os.getcwd()
     cor_dir = f'{home_dir}/dataset/{cor_dirname}'
     org_dir = f'{home_dir}/dataset/{org_dirname}'
 
-    process_corrupted_data(cor_dir)  # process corrupted data and save to the dedicated directory
-    process_original_data(org_dir, dataset)  # process original data and save to the dedicated directory
+    process_corrupted_data(cor_dir)
+    process_original_data(org_dir, dataset)

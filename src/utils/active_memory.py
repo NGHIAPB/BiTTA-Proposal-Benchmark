@@ -6,9 +6,30 @@ import torch
 import conf
 
 device = torch.device("cuda:{:d}".format(conf.args.gpu_idx) if torch.cuda.is_available() else "cpu")
-torch.cuda.set_device(conf.args.gpu_idx)  # this prevents unnecessary gpu memory allocation to cuda:0 when using estimator
+if torch.cuda.is_available():
+    torch.cuda.set_device(conf.args.gpu_idx)  # this prevents unnecessary gpu memory allocation to cuda:0 when using estimator
 
 class ActivePriorityFIFO:
+    """Bo nho ba ngan dung cho BiTTA/BiTTA-Proposal: correct_mem (S+), wrong_mem
+    (S-) va u_mem (U), tuong ung voi ba nhom mau mo ta trong luong hoat dong
+    cua thuat toan (Muc 2.2.6 bao cao): mau da duoc oracle xac nhan dung,
+    mau da duoc xac nhan sai, va mau chua duoc hoi (dung cho nhanh ABA).
+
+    Moi ngan la mot danh sach 4 "cot" song song [feat, cls, domain, entropy]
+    (khong phai 4 mau rieng) -- mot instance them vao la mot tuple 4 phan tu,
+    moi phan tu duoc append vao dung cot tuong ung. Khi day, ngan se loai bo
+    mot phan tu truoc khi them moi, theo chinh sach `pop`:
+      - "min": loai mau co entropy (cot thu 4) nho nhat trong ngan
+      - "max": loai mau co entropy lon nhat
+      - gia tri khac: loai theo FIFO (phan tu cu nhat, chi so 0)
+
+    Tham so `delay` (so lo) cho phep tre viec dua mot mau da co phan hoi
+    (dung/sai) vao correct_mem/wrong_mem; mau duoc giu tam trong
+    `delayed_queue` va chi thuc su chen vao sau khi du `delay` lo du lieu
+    khong nhan ke tu luc duoc hoi -- mo phong do tre phan hoi thuc te cua
+    oracle (xem --feedback_delay trong main.py).
+    """
+
     def __init__(self, capacity, pop="min", delay=0):
         # feat, cls, domain, entropy
         self.correct_mem = [[], [], [], []]  # for correct samples
@@ -60,6 +81,9 @@ class ActivePriorityFIFO:
         raise NotImplementedError
 
     def add_correct_instance(self, instance):
+        """Them mot mau (feat, cls, domain, entropy) da duoc oracle xac nhan
+        dung. Neu `delay` > 0, mau duoc xep vao delayed_queue thay vi chen
+        ngay vao correct_mem -- xem _process_delayed_queue()."""
         assert len(instance) == 4
         if self.delay > 0:
             self.delayed_queue.append(('correct', instance, self.unlabeled_count))
@@ -67,6 +91,8 @@ class ActivePriorityFIFO:
             self._insert_instance(self.correct_mem, instance)
 
     def add_wrong_instance(self, instance):
+        """Giong add_correct_instance() nhung cho mau da duoc xac nhan sai,
+        chen (co the tre) vao wrong_mem."""
         assert len(instance) == 4
         if self.delay > 0:
             self.delayed_queue.append(('wrong', instance, self.unlabeled_count))
@@ -74,6 +100,11 @@ class ActivePriorityFIFO:
             self._insert_instance(self.wrong_mem, instance)
 
     def add_u_instance(self, instance):
+        """Them mot mau chua duoc hoi phan hoi vao u_mem (luon chen ngay,
+        khong qua delayed_queue vi khong lien quan toi tre phan hoi). Sau
+        moi --update_every_x mau duoc them (tuong duong 1 lo), kich hoat
+        _process_delayed_queue() de giai phong cac mau dang cho du so lo
+        tre quy dinh."""
         assert len(instance) == 4
         self.unlabeled_count += 1
         self._insert_instance(self.u_mem, instance)
@@ -83,12 +114,17 @@ class ActivePriorityFIFO:
             self._process_delayed_queue()
 
     def _insert_instance(self, mem, instance):
+        """Chen `instance` (4 phan tu) vao ngan `mem`, loai bot 1 phan tu
+        theo chinh sach self.pop truoc neu ngan da day (self.capacity)."""
         if self.get_occupancy(mem) >= self.capacity:
             self.remove_instance(mem, pop=self.pop)
         for i, dim in enumerate(mem):
             dim.append(instance[i])
 
     def _process_delayed_queue(self):
+        """Duyet delayed_queue, chuyen cac mau da cho du >= self.delay lo
+        (tinh tu luc duoc dua vao hang doi) sang dung ngan correct_mem/
+        wrong_mem, roi xoa chung khoi hang doi."""
         # Process delayed insertions if delay batches have passed
         ready_instances = []
         for idx, (mem_type, instance, unlabeled_start) in enumerate(self.delayed_queue):
@@ -104,6 +140,9 @@ class ActivePriorityFIFO:
             self.delayed_queue.pop(idx)
 
     def remove_instance(self, mem, pop=None):
+        """Loai bo 1 phan tu khoi ngan `mem` theo chinh sach `pop`: "min"/"max"
+        loai mau co entropy (cot thu 4) nho nhat/lon nhat, con lai loai theo
+        FIFO (phan tu chi so 0, tuc cu nhat)."""
         if pop == "min":
             target_idx = np.argmin(mem[3])
         elif pop == "max":

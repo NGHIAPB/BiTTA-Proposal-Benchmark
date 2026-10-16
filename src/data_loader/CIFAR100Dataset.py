@@ -103,7 +103,7 @@ class CIFAR100Dataset(torch.utils.data.Dataset):
         self.domain_labels = np.array([0 for i in range(len(self.features))])
 
         self.dataset = torch.utils.data.TensorDataset(
-            torch.from_numpy(self.features),  # resize for resnet
+            torch.from_numpy(self.features),
             torch.from_numpy(self.class_labels),
             torch.from_numpy(self.domain_labels))
 

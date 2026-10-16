@@ -29,7 +29,8 @@ import os
 import data_loader.data_loader as data_loader_module
 
 device = torch.device("cuda:{:d}".format(conf.args.gpu_idx) if torch.cuda.is_available() else "cpu")
-torch.cuda.set_device(conf.args.gpu_idx)
+if torch.cuda.is_available():
+    torch.cuda.set_device(conf.args.gpu_idx)
 
 TRAINED = 0
 SKIPPED = 1
@@ -102,11 +103,9 @@ class DNN():
 
         self.net.to(device)
 
-        # Initialize optimizer (some TTA methods may overwrite this)
-        self.optimizer = self.init_learner()
+        self.optimizer = self.init_learner()  # some TTA methods (vd SAR) se ghi de optimizer nay
         self.class_criterion = nn.CrossEntropyLoss()
 
-        # Initialize memory for online learning
         if conf.args.memory_type == 'FIFO':
             self.mem = memory.FIFO(capacity=conf.args.memory_size)
         elif conf.args.memory_type == "ActivePriorityFIFO":
@@ -712,10 +711,8 @@ class DNN():
         cls = cls.to(torch.int32)
         feats, cls, dls = feats.to(device), cls.to(device), dls.to(device)
 
-        # Inference
         y_pred, y_conf, y_entropy, y_energy, y_embeddings, y_logit, y_output = self.model_inference(feats)
 
-        # Append values to lists
         current_true_cls_list = [int(c) for c in cls.tolist()]
         true_cls_list += current_true_cls_list
         current_pred_cls_list = [int(c) for c in y_pred.tolist()]
@@ -746,7 +743,6 @@ class DNN():
                 if i in progress_checkpoint:
                     print(f'[Online Eval][NumSample:{i}][Epoch:{progress_checkpoint.index(i) + 1}][Accuracy:{cumul_accuracy}]')
 
-        # Update JSON evaluation metrics
         self.json_eval['gt'] = true_cls_list
         self.json_eval['pred'] = pred_cls_list
         self.json_eval['accuracy'] = accuracy_list
@@ -1200,7 +1196,7 @@ class DNN():
             if dropout_confidences is not None:
                 selected_confs += [dropout_confidences[idx].item()]
 
-            mem.remove_u_instance_by_index(idx)  # remove index from candidate pool
+            mem.remove_u_instance_by_index(idx)
 
         if conf.args.active_full_label:  # full active TTA
             for correct_data_i in range(len(selected_feats)):
@@ -1240,10 +1236,10 @@ class DNN():
                     label,
                     y_entropy[match_i].item()]
 
-            if mask_correct[match_i]:  # correct
+            if mask_correct[match_i]:
                 mem.add_correct_instance(data)
                 self.num_correct += 1
-            else:  # wrong
+            else:
                 mem.add_wrong_instance(data)
                 self.num_wrong += 1
 

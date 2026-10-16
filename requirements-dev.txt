@@ -1,0 +1,4 @@
+# Dependency chi can khi PHAT TRIEN code (chay test tests/), khong can khi
+# chay thi nghiem that (xem requirements.txt cho dependency chay thuc).
+-r requirements.txt
+pytest>=7.0

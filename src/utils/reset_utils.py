@@ -29,6 +29,6 @@ def find_quantile(arr, perc):
     frac_part = frac_idx - int(frac_idx)
     low_idx = int(frac_idx)
     high_idx = low_idx + 1
-    quant = arr_sorted[low_idx] + (arr_sorted[high_idx] - arr_sorted[low_idx]) * frac_part  # linear interpolation
+    quant = arr_sorted[low_idx] + (arr_sorted[high_idx] - arr_sorted[low_idx]) * frac_part
 
     return quant

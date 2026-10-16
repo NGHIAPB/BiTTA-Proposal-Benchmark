@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""Entrypoint chay cac phuong phap thuoc ho BiTTA (Src/TENT/SAR/EATA/BiTTA).
+
+File nay duoc goi boi scripts/run_bitta_family.sh voi bo tham so dong lenh
+(--dataset/--method/--tgt/--seed/...) tuong ung voi mot (phuong phap, bo du
+lieu, kich ban, seed) duy nhat. Cac phuong phap khac (DeYO, MEMO) co
+entrypoint rieng, khong di qua file nay (xem src/methods/deyo/main.py va
+src/methods/memo/main.py).
+
+Luong chinh: parse_arguments() -> main() doc du lieu nguon/dich, khoi tao
+learner tuong ung (lop con cua learner.dnn.DNN), roi chay vong lap huan
+luyen (offline, --method Src) hoac thich nghi truc tuyen (online,
+--online) qua tung don vi trong corruption_list.
+"""
 
 import sys
 import argparse
@@ -21,16 +34,22 @@ os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
 
 def get_path():
+    """Dung duong dan log/checkpoint tu conf.args hien tai.
+
+    Quy uoc thu muc: log/<dataset>/<method>/[src_<...>/]tgt_<tgt>/<log_prefix>/.
+    Phan "tgt_<corruption_hoac_domain>/" chi them khi conf.args.tgt duoc dat
+    (Fully TTA truyen 1 don vi, Continuous/Mixed truyen "cont").
+
+    Returns:
+        tuple[str, str, str]: (result_path, checkpoint_path, log_path), ca
+        ba deu la cung mot thu muc goc o thoi diem nay -- duoc tach rieng vi
+        main() se nhanh nguon result_path thanh result_path/<corruption>/
+        cho tung don vi khi chay Continuous/Mixed.
+    """
     path = conf.args.log_name
-
-    # information about used data type
     path += conf.args.dataset + '/'
-
-    # information about used model type
-
     path += conf.args.method + '/'
 
-    # information about domain(condition) of training data
     if conf.args.src == ['rest']:
         path += 'src_rest' + '/'
     elif conf.args.src == ['all']:
@@ -52,9 +71,19 @@ def get_path():
 
 
 def main():
-    ######################################################################
+    """Chay toan bo quy trinh cho mot (phuong phap, bo du lieu, kich ban, seed).
+
+    Doc conf.args (da duoc parse_arguments() dien san o __main__) de: chon
+    kien truc mo hinh va hyperparameter theo bo du lieu, dung corruption_list
+    theo kich ban (Fully TTA: 1 phan tu; Continuous/Mixed: chuoi/danh sach
+    corruption cua conf.CONT_SEQUENCE_*), khoi tao learner tuong ung voi
+    conf.args.method, roi lap qua tung phan tu cua corruption_list de nap du
+    lieu dich va goi learner.train()/train_online() tuy conf.args.online.
+
+    Khong nhan tham so va khong tra ve gia tri -- moi dau ra (checkpoint,
+    log JSON, metric WaterBirds) duoc ghi truc tiep ra dia qua get_path().
+    """
     device = torch.device("cuda:{:d}".format(conf.args.gpu_idx) if torch.cuda.is_available() else "cpu")
-    # Assume that we are on a CUDA machine, then this should print a CUDA device:
     print(device)
 
     ################### Hyperparameters #################
@@ -137,7 +166,6 @@ def main():
     if conf.args.random_setting and conf.args.dataset not in ("pacs", "cifar10"):
         raise ValueError("Mixed shift (--random_setting) chi duoc data_loader ho tro cho pacs va cifar10.")
 
-    # modify for continual adaptation
     if conf.args.tgt == "cont":
         if conf.args.dataset == "pacs":
             cont_seq = conf.CONT_SEQUENCE_PACS
@@ -194,7 +222,7 @@ def main():
         since = time.time()
         
         print('##############Source Data Loading...##############')
-        set_seed()  # reproducibility
+        set_seed()
         # imagenetR: TTA khong can du lieu nguon (ResNet-18 pretrained torchvision). colored-mnist chi can nguon khi
         # huan luyen checkpoint (--method Src). Bo qua o cac truong hop con lai de khoi quet du lieu vo ich.
         if conf.args.dataset != "imagenetR" and not (conf.args.dataset == "colored-mnist" and conf.args.method != "Src"):
@@ -211,7 +239,7 @@ def main():
             source_val_data_loader = None
 
         print('##############Target Data Loading...##############')
-        set_seed()  # reproducibility
+        set_seed()
         target_data_loader, _ = data_loader.domain_data_loader(conf.args.dataset, corruption,
                                                             conf.args.opt['file_path'],
                                                             batch_size=conf.args.opt['batch_size'],
@@ -219,7 +247,7 @@ def main():
                                                             test_split=0, is_src=False,
                                                             num_source=conf.args.num_source)
 
-        set_seed()  # reproducibility
+        set_seed()
 
         learner.set_target_data(source_train_data_loader, source_val_data_loader, target_data_loader, corruption_name)
 
@@ -232,7 +260,6 @@ def main():
         
         learner.run_before_training()
 
-        # make dir if it doesn't exist
         if not os.path.exists(result_path):
             oldumask = os.umask(0)
             os.makedirs(result_path, 0o777)
@@ -243,7 +270,7 @@ def main():
             os.umask(oldumask)
         script = ' '.join(sys.argv[1:])
 
-        set_seed()  # reproducibility
+        set_seed()
 
         if conf.args.online == False:
             start_epoch = 1
@@ -330,7 +357,23 @@ def main():
             data_loader.delete_target_cache(filename, corruption_name, file_path, transform=None)
 
 def parse_arguments(argv):
-    """Command line parse."""
+    """Dinh nghia va phan tich toan bo tham so dong lenh cho main.py.
+
+    Gom 4 nhom chinh: (1) bat buoc -- dataset/model/method/tgt; (2) chung
+    cho moi phuong phap -- seed/epoch/online/update_every_x/memory_type;
+    (3) rieng cho EATA (fisher_size/e_margin/d_margin) va SAR
+    (turn_off_reset); (4) rieng cho BiTTA/BiTTA-Proposal -- phan hoi nhi
+    phan (n_active_sample/enable_bitta/feedback_error_rate), ham mat mat
+    hai nhanh BFA/ABA (w_final_bfa_loss/w_final_aba_loss), va tieu chi
+    chon mau (sample_selection=mc_conf|info_max cung cac tham so hieu
+    chuan Platt platt_min_samples/platt_buffer_size/platt_refit_every).
+
+    Args:
+        argv: danh sach chuoi tham so dong lenh (thuong la sys.argv[1:]).
+
+    Returns:
+        argparse.Namespace: duoc gan truc tiep vao conf.args o __main__.
+    """
 
     # Note that 'type=bool' args should be False in default. Any string argument is recognized as "True". Do not give "--bool_arg 0"
 
@@ -397,7 +440,6 @@ def parse_arguments(argv):
                         help='number of previously trained data to be used for training')
     parser.add_argument('--memory_type', type=str, default='FIFO', help='FIFO')
 
-    # BiTTA: khoi phuc ngau nhien ve trong so nguon sau moi lan cap nhat (0 = tat)
     parser.add_argument('--restoration_factor', type=float, default=0.0,
                         help='xac suat khoi phuc trong so ve mo hinh nguon (BiTTA)')
 
@@ -465,9 +507,6 @@ def parse_arguments(argv):
     parser.add_argument('--random_setting', action='store_true', default=False)
     parser.add_argument('--dataloader_batch_size',type=int, default=None, help='')
 
-    # enhance tta
-
-    
     parser.add_argument('--use_original_conf',action='store_true', default=False)
 
     parser.add_argument('--dirichlet_beta', type=float, default=0.1,
@@ -480,6 +519,11 @@ def parse_arguments(argv):
 
 
 def set_seed():
+    """Dat seed cho torch/numpy/random tu conf.args.seed va bat che do
+    tat dinh cua cuDNN/torch, de cac lan chay cung tham so cho ket qua
+    tai lap duoc (duoc goi lai nhieu lan trong main(), truoc moi buoc
+    doc du lieu/huan luyen, vi mot so thao tac -- vd torchvision transform
+    ngau nhien -- co the lam lech trang thai RNG toan cuc)."""
     torch.manual_seed(conf.args.seed)
     np.random.seed(conf.args.seed)
     random.seed(conf.args.seed)

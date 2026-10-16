@@ -8,8 +8,6 @@ from torch import nn
 
 def sam_collect_params(model):
     """Collect the affine scale + shift parameters from norm layers.
-    Walk the model's modules and collect all normalization parameters.
-    Return the parameters and their names.
     Note: other choices of parameterization are possible!
     """
     params = []
@@ -46,7 +44,6 @@ class SAM(torch.optim.Optimizer):
         super(SAM, self).__init__(params, defaults)
 
         self.base_optimizer = base_optimizer(self.param_groups, **kwargs)
-        # print(self.base_optimizer, self.param_groups, **kwargs)
         self.param_groups = self.base_optimizer.param_groups
         self.defaults.update(self.base_optimizer.defaults)
 
@@ -108,8 +105,6 @@ class SAM_PL(torch.optim.Optimizer):
         super(SAM_PL, self).__init__(params, defaults)
 
         self.base_optimizer = base_optimizer(self.param_groups, **kwargs)
-
-        # print(self.base_optimizer, self.param_groups, **kwargs)
         self.param_groups = self.base_optimizer.param_groups
         self.defaults.update(self.base_optimizer.defaults)
         
