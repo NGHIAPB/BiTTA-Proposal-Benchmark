@@ -133,7 +133,18 @@ case $METHOD in
            --dropout_rate "$DROPOUT" --n_dropouts "$NDROP"
            --sample_selection info_max --n_dropouts_select 16 --explore_eps 0.0 --platt_min_samples 20) ;;
   simatta)
-    EXTRA=(--method SimATTA --memory_type FIFO) ;;
+    # atta_limit_mem_size: BAT BUOC gioi han, neu khong incremental clustering
+    # (sklearn KMeans) se re-cluster TOAN BO anchor tich luy tu dau stream moi
+    # batch, va n_clusters tang khong gioi han theo so batch -> chi phi O(T^2)
+    # trong do luong chay cang dai (Continuous/Mixed, hang tram nghin anh) se
+    # vuot xa Fully TTA (moi tien trinh chi ~10000 anh/don vi, tu reset ve 0).
+    # Mac dinh 300 (khop quy uoc bo dem Platt scaling 300 cap da dung noi khac);
+    # ATTA_LIMIT_MEM_SIZE=<n> de doi, ATTA_ENABLE_SKIP=<k> de giam them tan suat
+    # phan cum (chi chon anchor moi 1/(k+1) batch, van huan luyen moi batch).
+    EXTRA=(--method SimATTA --memory_type FIFO
+           --atta_limit_mem_size "${ATTA_LIMIT_MEM_SIZE:-300}")
+    if [ -n "${ATTA_ENABLE_SKIP:-}" ]; then EXTRA+=(--enable_skip "$ATTA_ENABLE_SKIP"); fi
+    ;;
   *)
     echo "Method khong hop le: $METHOD"; exit 1 ;;
 esac
