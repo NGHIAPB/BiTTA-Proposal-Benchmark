@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-# Tong hop ket qua TENT*/EATA*/SAR*/BiTTA/BiTTA-Proposal/DeYO/MEMO thanh bang so sanh theo (dataset, setting).
+# Tong hop ket qua TENT*/EATA*/SAR*/BiTTA/BiTTA-Proposal/SimATTA/MEMO thanh bang so sanh theo (dataset, setting).
 # (* = phien ban co binary feedback, xem scripts/run_bitta_family.sh)
 #
-# Doc log tu   log/<ds>/<TENT|EATA|SAR|BiTTA>/tgt_<...>/<log_prefix>/.../online_eval.json  voi
+# Doc log tu   log/<ds>/<TENT|EATA|SAR|BiTTA|SimATTA>/tgt_<...>/<log_prefix>/.../online_eval.json  voi
 #   log_prefix = <method>_<dataset>_<setting>_s<seed>   (mac dinh cua run_bitta_family.sh)
 #   continuous : tgt_cont/<prefix>/<unit>/online_eval.json   -> trung binh accuracy cuoi cua tung unit
 #   mixed      : tgt_cont/<prefix>/random/online_eval.json   -> accuracy tich luy tai 25/50/75/100% luong du lieu
 #   fully      : tgt_<unit>/<prefix>/online_eval.json        -> trung binh accuracy cuoi cua tung unit
 # unit = corruption (CIFAR-C, Tiny-ImageNet-C), domain (PACS), corrupt (ImageNet-R), test (ColoredMNIST, WaterBirds).
 #
-# DeYO/MEMO co log dang van ban (khong co online_eval.json), doc theo dong "Result under <unit>. ... top1: X | average: X":
-#   DeYO : log/deyo_deyo_<dataset>_<setting>_s<seed>/*.txt      (theo %; mixed chi co 1 so cuoi -> cot 100%)
+# MEMO co log dang van ban (khong co online_eval.json), doc theo dong "Result under <unit>. ... average: X":
 #   MEMO : log/memo_memo_<ds>_s<seed>/<ds>_<unit>_L5_s<seed>.txt  (ti le 0-1 -> nhan 100; chi Fully)
 # WaterBirds: chi so chinh = trung binh 4 nhom (avg_group); bang thu hai = nhom te nhat (worst_group), ca 7 phuong phap.
 #
@@ -44,13 +43,14 @@ DATASET_CFG = {
 MEMO_DS = {"cifar10_c": "cifar10", "cifar100_c": "cifar100", "tiny_imagenet_c": "tiny-imagenet", "pacs": "pacs",
            "imagenet_r": "imagenet_r", "colored_mnist": "colored_mnist", "waterbirds": "waterbirds"}
 
-METHODS = ["tent", "eata", "sar", "bitta_baseline", "bitta_proposal", "deyo", "memo"]
+METHODS = ["tent", "eata", "sar", "bitta_baseline", "bitta_proposal", "simatta", "memo"]
 METHOD_LABEL = {
     "tent": "TENT*", "eata": "EATA*", "sar": "SAR*",
-    "bitta_baseline": "BiTTA", "bitta_proposal": "BiTTA-Proposal (C1+C4)", "deyo": "DeYO", "memo": "MEMO",
+    "bitta_baseline": "BiTTA", "bitta_proposal": "BiTTA-Proposal (C1+C4)", "simatta": "SimATTA", "memo": "MEMO",
 }
 # thu muc log = gia tri --method truyen cho src/main.py
-METHOD_DIR = {"tent": "TENT", "eata": "EATA", "sar": "SAR", "bitta_baseline": "BiTTA", "bitta_proposal": "BiTTA"}
+METHOD_DIR = {"tent": "TENT", "eata": "EATA", "sar": "SAR", "bitta_baseline": "BiTTA", "bitta_proposal": "BiTTA",
+              "simatta": "SimATTA"}
 MIXED_POINTS = (0.25, 0.50, 0.75, 1.00)
 
 
@@ -62,13 +62,12 @@ def _load_acc(path):
 
 
 _RES = re.compile(r"Result under (\S+?)\. The adaptation accuracy of \S+ is\s+(?:top1:\s*([\d.]+)|average:\s*([\d.]+))")
-_DET = re.compile(r"Detailed result under (\S+?)\. LL: ([\d.]+), LS: ([\d.]+), SL: ([\d.]+), SS: ([\d.]+)")
 _WORST = re.compile(r"Detailed result under (\S+?)\..*worst:\s*([\d.]+)")
 
 
 def _parse_text_logs(pattern, scale):
-    """Doc log van ban cua DeYO/MEMO -> {unit: [acc, worst]}; luot ghi sau de len luot truoc.
-    worst chi co voi WaterBirds (DeYO: min 4 nhom tu dong 'Detailed'; MEMO: truong 'worst:')."""
+    """Doc log van ban cua MEMO -> {unit: [acc, worst]}; luot ghi sau de len luot truoc.
+    worst chi co voi WaterBirds (truong 'worst:')."""
     out = {}
     for f in sorted(glob.glob(pattern)):
         for line in open(f, encoding="utf-8", errors="ignore"):
@@ -80,9 +79,6 @@ def _parse_text_logs(pattern, scale):
             if m:
                 out.setdefault(m.group(1), [None, None])[1] = float(m.group(2)) * scale
                 continue
-            m = _DET.search(line)
-            if m:
-                out.setdefault(m.group(1), [None, None])[1] = min(float(x) for x in m.groups()[1:]) * scale
     return out
 
 
@@ -94,17 +90,11 @@ def _lookup(d, u):
 
 
 def _load_text_run(log_root, cfg, method, dataset, setting, seed, metric):
-    """DeYO / MEMO (log van ban). Tra ve giong load_run."""
+    """MEMO (log van ban, chi Fully TTA). Tra ve giong load_run."""
     idx = 1 if metric == "worst" else 0
-    if method == "deyo":
-        d = _parse_text_logs(os.path.join(log_root, f"deyo_deyo_{dataset}_{setting}_s{seed}", "*.txt"), 1.0)
-        if setting == "mixed":
-            r = d.get("mix_shifts")
-            return None if r is None or r[idx] is None else [float("nan")] * 3 + [r[idx]]
-    else:   # memo: chi fully
-        if setting != "fully":
-            return None
-        d = _parse_text_logs(os.path.join(log_root, f"memo_memo_{MEMO_DS[dataset]}_s{seed}", "*.txt"), 100.0)
+    if setting != "fully":
+        return None
+    d = _parse_text_logs(os.path.join(log_root, f"memo_memo_{MEMO_DS[dataset]}_s{seed}", "*.txt"), 100.0)
     vals = []
     for u in cfg["units"]:
         r = _lookup(d, u)
@@ -117,15 +107,13 @@ def _load_text_run(log_root, cfg, method, dataset, setting, seed, metric):
 def _valid_for(method, dataset, setting):
     if method == "memo":
         return setting == "fully"
-    if method == "deyo" and setting == "mixed":
-        return dataset in ("cifar10_c", "pacs")
     return True
 
 
 def load_run(log_root, cfg, method, dataset, setting, seed, metric="acc"):
     """continuous/fully: tra ve trung binh accuracy cuoi cua cac unit (None neu thieu unit).
     mixed: tra ve list accuracy tich luy tai 25/50/75/100%. metric="worst": nhom te nhat (chi WaterBirds)."""
-    if method in ("deyo", "memo"):
+    if method == "memo":
         return _load_text_run(log_root, cfg, method, dataset, setting, seed, metric)
     ds, prefix = cfg["ds"], f"{method}_{dataset}_{setting}_s{seed}"
     mdir = os.path.join(log_root, ds, METHOD_DIR[method])

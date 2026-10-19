@@ -2,8 +2,9 @@
 # Chay 1 (method, dataset, setting, seed) cua kich ban thuc nghiem.
 #
 # Cach dung: bash run_bitta_family.sh <method> <dataset> <setting> <seed> [log_prefix]
-#   method : tent | eata | sar | bitta_baseline | bitta_proposal
+#   method : tent | eata | sar | bitta_baseline | bitta_proposal | simatta
 #            (tent/eata/sar LUON chay o che do co binary feedback: --enable_bitta, "TENT*/EATA*/SAR*" cua paper)
+#            (simatta: ban port cua Gui et al. ICLR 2024, da chuyen oracle sang phan hoi nhi phan -- xem learner/simatta.py)
 #   dataset: cifar10_c | cifar100_c | tiny_imagenet_c | pacs | imagenet_r | colored_mnist | waterbirds
 #   setting: continuous | mixed | fully
 #
@@ -28,9 +29,13 @@
 # paper/tta.sh cho BiTTA (va colored_mnist cho EATA): dung cau hinh cua dataset tuong dong (xem ghi chu) -- CHUA tinh chinh.
 #   - tent/eata/sar: memory_type FIFO (BAT BUOC: learner/tent.py, sar.py, eata.py assert mem la FIFO) + --enable_bitta.
 #   - bitta_*: memory_type ActivePriorityFIFO + MC-Dropout + --use_learned_stats.
+#   - simatta: memory_type FIFO; phan hoi nhi phan da tich hop san trong thuat toan (KHONG dung --enable_bitta,
+#     khac co che cua TENT/EATA/SAR o tren); khong dung --epoch (vong lap huan luyen rieng theo atta_budget/atta_*);
+#     khong truyen --lr nen dung mac dinh opt['learning_rate'] theo dataset (giong cot LR cua BiTTA o tren).
 # Vi du: bash run_bitta_family.sh bitta_proposal cifar10_c continuous 0
 #        bash run_bitta_family.sh tent pacs mixed 0
 #        bash run_bitta_family.sh eata imagenet_r fully 1
+#        bash run_bitta_family.sh simatta waterbirds fully 0
 
 set -e
 
@@ -127,6 +132,8 @@ case $METHOD in
            --restoration_factor "$RST" --use_learned_stats --bn_momentum 0.3
            --dropout_rate "$DROPOUT" --n_dropouts "$NDROP"
            --sample_selection info_max --n_dropouts_select 16 --explore_eps 0.0 --platt_min_samples 20) ;;
+  simatta)
+    EXTRA=(--method SimATTA --memory_type FIFO) ;;
   *)
     echo "Method khong hop le: $METHOD"; exit 1 ;;
 esac

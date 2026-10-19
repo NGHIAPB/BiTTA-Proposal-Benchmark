@@ -1,14 +1,15 @@
 #!/bin/bash
-# Chay kich ban cua 5 phuong phap BiTTA-family = 225 run (moi run = 1 to hop method x dataset x setting x seed):
+# Chay kich ban cua 6 phuong phap BiTTA-family = 270 run (moi run = 1 to hop method x dataset x setting x seed):
 #
 #   Setting     Dataset                                            Seed        # run
-#   continuous  cifar10_c cifar100_c tiny_imagenet_c | pacs        3 | 5       (3+3+3+5) x 5 = 70
-#   mixed       cifar10_c | pacs                                   3 | 5       (3+5) x 5     = 40
+#   continuous  cifar10_c cifar100_c tiny_imagenet_c | pacs        3 | 5       (3+3+3+5) x 6 = 84
+#   mixed       cifar10_c | pacs                                   3 | 5       (3+5) x 6     = 48
 #   fully       cifar10_c cifar100_c tiny_imagenet_c imagenet_r
-#               colored_mnist waterbirds | pacs                     3 | 5       (3+3+3+3+3+3+5) x 5 = 115
-#   Method: tent eata sar (co binary feedback) bitta_baseline bitta_proposal.
+#               colored_mnist waterbirds | pacs                     3 | 5       (3+3+3+3+3+3+5) x 6 = 138
+#   Method: tent eata sar (co binary feedback) bitta_baseline bitta_proposal simatta
+#           (phan hoi nhi phan da tich hop san trong thuat toan, xem learner/simatta.py).
 #
-# DeYO va MEMO chay bang run_all_other_methods.sh (thuat toan/runner rieng).
+# MEMO chay bang run_all_other_methods.sh (episodic, runner rieng).
 # Dieu kien: da co du lieu (dataset/, domainbed_dataset/) va checkpoint (pretrained_weights/), xem README.md.
 # Bien moi truong: SETTINGS="continuous fully" (loc setting), DATASETS="pacs cifar10_c" (loc dataset),
 #                  SKIP_DONE=1 (bo qua run da co online_eval.json de chay tiep sau khi bi ngat).
@@ -17,7 +18,7 @@
 set -e
 cd "$(dirname "$0")"
 
-METHODS=(tent eata sar bitta_baseline bitta_proposal)
+METHODS=(tent eata sar bitta_baseline bitta_proposal simatta)
 SETTINGS=${SETTINGS:-"continuous mixed fully"}
 DATASETS=${DATASETS:-"cifar10_c cifar100_c tiny_imagenet_c pacs imagenet_r colored_mnist waterbirds"}
 
@@ -33,7 +34,7 @@ done_marker() {   # ten thu muc log cua --dataset ung voi ten dataset trong scri
   case $1 in cifar10_c) echo cifar10;; cifar100_c) echo cifar100;; tiny_imagenet_c) echo tiny-imagenet;;
              pacs) echo pacs;; imagenet_r) echo imagenetR;; colored_mnist) echo colored-mnist;; waterbirds) echo waterbirds;; esac
 }
-method_dir() { case $1 in tent) echo TENT;; eata) echo EATA;; sar) echo SAR;; *) echo BiTTA;; esac; }
+method_dir() { case $1 in tent) echo TENT;; eata) echo EATA;; sar) echo SAR;; simatta) echo SimATTA;; *) echo BiTTA;; esac; }
 
 N=0
 for setting in $SETTINGS; do

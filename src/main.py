@@ -135,6 +135,7 @@ def main():
     from learner.sar import SAR
     from learner.eata import EATA
     from learner.bitta import BiTTA
+    from learner.simatta import SimATTA
 
     result_path, checkpoint_path, log_path = get_path()
 
@@ -150,6 +151,8 @@ def main():
         learner_method = EATA
     elif conf.args.method == "BiTTA":
         learner_method = BiTTA
+    elif conf.args.method == "SimATTA":
+        learner_method = SimATTA
     else:
         raise NotImplementedError(conf.args.method)
 
@@ -471,6 +474,24 @@ def parse_arguments(argv):
     parser.add_argument("--active_full_label", action='store_true', default=False)
     parser.add_argument('--feedback_error_rate', type=float, default=0, help='Feedback error rate')
     parser.add_argument('--enable_bitta',action='store_true', default=False, help="Use to turn on TTA with binary feedback")
+
+    # SimATTA (phan hoi nhi phan, xem learner/simatta.py)
+    parser.add_argument('--atta_budget', type=int, default=100000,
+                        help='Tran so mau duoc hoi oracle tich luy; -1 = khong gioi han')
+    parser.add_argument('--atta_cold_start', type=int, default=100,
+                        help='So mau source-like toi thieu truoc khi het uu tien trong so cho chung (<0.2)')
+    parser.add_argument('--atta_inc_rate', type=float, default=1.0,
+                        help='Muc tang so cluster (n_clusters) moi batch co active sample selection')
+    parser.add_argument('--atta_upper_th', type=float, default=0.01,
+                        help='Nguong entropy eh cho dataset chua tune rieng (xem init_learner)')
+    parser.add_argument('--atta_lower_th', type=float, default=0.0001,
+                        help='Nguong entropy el cho dataset chua tune rieng (xem init_learner)')
+    parser.add_argument('--atta_batch_size', type=int, default=64,
+                        help='Batch size huan luyen tren anchor cho dataset chua tune rieng')
+    parser.add_argument('--atta_limit_mem_size', type=int, default=None,
+                        help='Gioi han so anchor luu tru (FIFO cat bot anchor cu nhat); None = khong gioi han')
+    parser.add_argument('--atta_limit_batch_active_sample', type=int, default=None,
+                        help='Gioi han so mau duoc hoi oracle moi batch; None = khong gioi han')
 
     # BiTTA
     parser.add_argument('--w_final_bfa_loss', type=float, default=1.0, help='')

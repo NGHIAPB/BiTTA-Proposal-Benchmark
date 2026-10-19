@@ -1,0 +1,21 @@
+# SimATTA (Gui et al., ICLR 2024) -- chon mau bang nguong entropy + incremental k-means
+# clustering (anchors); ban port trong project nay da chuyen oracle sang phan hoi nhi phan
+# (giong TENT*/SAR*/EATA*/BiTTA), xem learner/simatta.py.
+method: SimATTA
+binary_feedback: true   # tich hop san trong thuat toan (KHONG dung --enable_bitta), chay bang scripts/run_bitta_family.sh
+settings: [continuous, mixed, fully]   # ca 3; waterbirds CHI o fully
+model: resnet18   # hoac resnet18_pretrained tuy dataset, giong 5 phuong phap con lai cua ho BiTTA
+memory_type: FIFO
+lr: null   # khong truyen --lr -> dung mac dinh opt['learning_rate'] theo dataset (giong cot lr cua BiTTA)
+atta_budget: 100000        # tran so mau duoc hoi oracle tich luy
+atta_cold_start: 100       # so mau source-like toi thieu truoc khi het uu tien trong so cho chung (<0.2)
+atta_inc_rate: 1.0         # muc tang so cluster (n_clusters) moi batch co active sample selection
+atta_upper_th: 0.01        # nguong entropy eh cho dataset chua tune rieng (cifar10/cifar100/colored-mnist/waterbirds)
+atta_lower_th: 0.0001      # nguong entropy el cho dataset chua tune rieng
+atta_batch_size: 64        # batch size huan luyen tren anchor cho dataset chua tune rieng
+notes: >
+  Port tu BiTTA/learner/simatta_bin.py (ban phan hoi nhi phan cua SimATTA goc, duoc chinh tac gia BiTTA dung lam
+  baseline so sanh). Khac DeYO (da go khoi project): dung chung entrypoint src/main.py / scripts/run_bitta_family.sh
+  voi TENT*/SAR*/EATA*/BiTTA, khong can runner/adapter dataset rieng. eh/el/steps/train_bs da tune theo paper goc cho
+  pacs, tiny-imagenet, imagenetR; cac dataset con lai (cifar10/cifar100/colored-mnist/waterbirds) dung mac dinh
+  atta_upper_th/atta_lower_th/atta_batch_size qua CLI -- CHUA tinh chinh, coi ket qua la xu huong.
