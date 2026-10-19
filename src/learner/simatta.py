@@ -8,7 +8,7 @@ import conf
 from utils.memory import FIFO
 from .dnn import DNN
 from utils.loss_functions import *
-from utils.atta_dataloader import InfiniteDataLoader, FastDataLoader
+from utils.atta_dataloader import InfiniteDataLoader
 from munch import Munch
 from sklearn.metrics import pairwise_distances_argmin_min
 
@@ -337,18 +337,35 @@ class SimATTA(DNN):
         return anchors
 
     def update_anchors_feats(self, anchors):
-        anchors_loader = FastDataLoader(TensorDataset(anchors.data), weights=None,
-                                         batch_size=32, num_workers=self.atta_variables['num_workers'], sequential=True)
+        # Chia batch thu cong thay vi FastDataLoader(drop_last=False): khi
+        # track_running_stats=False (cau hinh TTA kieu TENT dung xuyen suot
+        # benchmark nay), BatchNorm LUON tinh thong ke theo batch hien tai du
+        # da goi self.net.eval() (khong co running stats de fallback), nen mot
+        # batch cuoi chi con dung 1 mau se lam torch.nn.functional.batch_norm
+        # nem ValueError "Expected more than 1 value per channel". Neu phep
+        # chia deu cho batch_size de lai phan du dung 1, gop phan du do vao
+        # batch truoc thay vi tach rieng.
+        n = len(anchors.data)
+        batch_size = 32
+        sizes = []
+        remaining = n
+        while remaining > 0:
+            take = min(batch_size, remaining)
+            if remaining - take == 1:
+                take += 1
+            sizes.append(take)
+            remaining -= take
 
         anchors.feats = None
         self.net.eval()
-        for data in anchors_loader:
-            data = data[0].to(device)
-            _, feats = self.net[1](self.net[0](data), get_embedding=True)
-            if anchors.feats is None:
-                anchors.feats = feats.cpu().detach()
-            else:
-                anchors.feats = torch.cat([anchors.feats, feats.cpu().detach()])
+        idx = 0
+        with torch.no_grad():
+            for s in sizes:
+                data = anchors.data[idx: idx + s].to(device)
+                idx += s
+                _, feats = self.net[1](self.net[0](data), get_embedding=True)
+                feats = feats.cpu().detach()
+                anchors.feats = feats if anchors.feats is None else torch.cat([anchors.feats, feats])
         return anchors
 
     @torch.no_grad()
