@@ -254,11 +254,20 @@ class SimATTA(DNN):
 
         source_binary = source_anchors.binary if all_binary else torch.ones(source_anchors.target.shape) == 1
 
-        source_loader = InfiniteDataLoader(TensorDataset(source_anchors.data, source_anchors.target, source_binary), weights=None,
+        # weights=trong so deu (khong phai None): InfiniteDataLoader voi weights=None dung
+        # RandomSampler(replacement=True), ma "mot vong" cua no dai dung len(dataset) mau, nen
+        # BatchSampler(drop_last=False) co the sinh batch cuoi vong CHI 1 mau moi khi len(dataset)
+        # % train_bs du ra 1 -- va vi InfiniteDataLoader lap vo han, batch=1 se dinh ky xuat hien
+        # giua luc self.net.train(), lam BatchNorm bao loi "Expected more than 1 value per
+        # channel". Truyen weights deu -> WeightedRandomSampler(num_samples=batch_size) luon tra
+        # dung batch_size moi vong, khong bao gio con du.
+        source_loader = InfiniteDataLoader(TensorDataset(source_anchors.data, source_anchors.target, source_binary),
+                                            weights=torch.ones(source_anchors.num_elem()),
                                             batch_size=self.atta_variables['train_bs'],
                                             num_workers=self.atta_variables['num_workers'])
 
-        target_loader = InfiniteDataLoader(TensorDataset(target_anchors.data, target_anchors.target, target_anchors.binary), weights=None,
+        target_loader = InfiniteDataLoader(TensorDataset(target_anchors.data, target_anchors.target, target_anchors.binary),
+                                            weights=torch.ones(target_anchors.num_elem()),
                                             batch_size=self.atta_variables['train_bs'], num_workers=self.atta_variables['num_workers'])
 
         alpha = target_anchors.num_elem() / (target_anchors.num_elem() + source_anchors.num_elem())
