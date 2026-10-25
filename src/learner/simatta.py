@@ -436,10 +436,16 @@ class SimATTA(DNN):
                 feats4cluster = feats
                 sample_weight = torch.ones(len(feats), dtype=torch.float)
 
+            # n_init=1 (ban goc dung 10): khi --atta_limit_mem_size duoc bat, n_clusters bi ghim
+            # o muc (so anchor + 1), tuc gan bang chinh so diem dem phan cum (vd 301 cum cho 364
+            # diem) -- moi cum chi ~1 diem nen khoi tao lai nhieu lan khong cai thien chat luong,
+            # chi nhan doi chi phi. Do thuc te o che do nay: 5,4s/batch voi n_init=10 so voi
+            # 0,38s/batch voi n_init=1 (nhanh hon ~14 lan), la phan chi phi lon nhat cua
+            # Continuous/Mixed tren luong du lieu dai (CIFAR-100-C: ~2344 batch).
             if self.atta_variables['gpu_clustering']:
                 from utils.fast_pytorch_kmeans import KMeans
                 from joblib import parallel_backend
-                kmeans = KMeans(n_clusters=n_clusters, n_init=10, device=device).fit(
+                kmeans = KMeans(n_clusters=n_clusters, n_init=1, device=device).fit(
                     feats4cluster.to(device),
                     sample_weight=sample_weight.to(device))
                 with parallel_backend('threading', n_jobs=8):
@@ -449,7 +455,7 @@ class SimATTA(DNN):
                 from joblib import parallel_backend
                 from sklearn.cluster import KMeans
                 with parallel_backend('threading', n_jobs=8):
-                    kmeans = KMeans(n_clusters=n_clusters, n_init=10, algorithm='elkan', random_state=conf.args.seed).fit(
+                    kmeans = KMeans(n_clusters=n_clusters, n_init=1, algorithm='elkan', random_state=conf.args.seed).fit(
                         feats4cluster, sample_weight=sample_weight)
                     raw_closest, _ = pairwise_distances_argmin_min(kmeans.cluster_centers_, feats4cluster)
                 kmeans_labels_ = kmeans.labels_
